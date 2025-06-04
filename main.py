@@ -81,7 +81,8 @@ def main(args):
 
         optimizer = optim.Adam(
             list(model.parameters()) + list(Loss_fn.parameters()),
-            lr=args.learning_rate
+            lr=args.learning_rate,
+            weight_decay=args.l2_normalization # Add this line
         )
 
         writer = SummaryWriter(log_dir=f"runs/FCMagnet_zero_2/fold_{fold}")

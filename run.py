@@ -32,6 +32,10 @@ if __name__ == '__main__':
     parser.add_argument("--in_channels", type=int, default=5, help="Number of input channels/features for the model")
     parser.add_argument("--gmm_lambda", type=float, default=0.01, help="Lambda for GMM prototype regularization in prototype loss")
 
+    # Early stopping parameters
+    parser.add_argument("--early_stopping_patience", type=int, default=10, help="Number of epochs to wait for improvement before early stopping (0 to disable)")
+    parser.add_argument("--early_stopping_min_delta", type=float, default=0.001, help="Minimum change in monitored quantity to qualify as an improvement")
+    parser.add_argument("--early_stopping_monitor", type=str, default="f1_score", choices=["f1_score", "accuracy", "loss"], help="Metric to monitor for early stopping (f1_score, accuracy, or loss)")
 
     # Different Model types
     parser.add_argument("--FFT-or-not", action='store_false',
