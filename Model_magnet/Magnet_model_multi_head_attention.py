@@ -127,6 +127,10 @@ class ChebNet(nn.Module):
 
         self.K, self.q = args.K, args.q
 
+        self.num_heads = args.num_heads
+
+        self.num_filters = args.num_filter
+
         self.label_encoding = args.label_encoding
 
         self.cheb_conv1 = ChebConv(in_c=in_c, out_c=args.num_filter, K=self.K, use_attention=args.simple_attention)
@@ -142,6 +146,8 @@ class ChebNet(nn.Module):
             self.conv = compnn.CVConv1d(30 * last_dim, 9, kernel_size=1)
         else:
             self.conv = compnn.CVConv1d(30 * last_dim, args.proto_dim, kernel_size=1)
+
+        self.multi_head_attention = compnn.CVLinear(in_c, out_features=args.num_filter * self.num_heads)
         #
         self.tanh = compnn.CVPolarTanh()
         self.bn = ComplexBatchNorm1d(30, affine=False)
@@ -150,27 +156,40 @@ class ChebNet(nn.Module):
         mask = 1.0 * (real >= 0)
         return mask * real, mask * img
 
+    def multi_head_attention_layer(self, real, imag, graph):
+
+        x = complextorch.CVTensor(real, imag)
+
+        x = self.multi_head_attention(x)
+
+        B, N, _ = x.shape
+
+        x = x.view(B, N, self.num_heads, self.num_filters)
+
+
+
     def forward(self, real, imag, graph, layer=2):
 
-        graph = torch.mean(graph, dim=1)
+        for i in range(graph.shape[1]):
 
-        her_mat = torch.stack([decomp(data, self.q, norm=True, laplacian=True, max_eigen=2, gcn_appr=True)
-                            for data in graph])
 
-        cheb_graph = torch.stack([cheb_poly(her_mat[i], self.K) for i in range(her_mat.shape[0])]).to(device)
+            her_mat = torch.stack([decomp(data, self.q, norm=True, laplacian=True, max_eigen=2, gcn_appr=True)
+                                for data in graph])
 
-        real, imag = self.cheb_conv1((real, imag), cheb_graph)
-        # print("cheb Conv1:",self.cheb_conv1.weight_real.requires_grad_())
-        for l in range(1,layer):
-            real, imag = self.cheb_conv2((real, imag), cheb_graph)
-            # real, imag = self.complex_relu(real, imag)
+            cheb_graph = torch.stack([cheb_poly(her_mat[i], self.K) for i in range(her_mat.shape[0])]).to(device)
 
-        real, imag = torch.mean(real, dim=2), torch.mean(imag, dim=2)
+            real, imag = self.cheb_conv1((real, imag), cheb_graph)
+            # print("cheb Conv1:",self.cheb_conv1.weight_real.requires_grad_())
+            for l in range(1,layer):
+                real, imag = self.cheb_conv2((real, imag), cheb_graph)
+                # real, imag = self.complex_relu(real, imag)
 
-        x = complextorch.CVTensor(real, imag).to(device)
-        # x = self.bn(x)
-        x = self.tanh(x)
-        x = self.conv(x[:, :, None])
+            real, imag = torch.mean(real, dim=2), torch.mean(imag, dim=2)
+
+            x = complextorch.CVTensor(real, imag).to(device)
+            # x = self.bn(x)
+            x = self.tanh(x)
+            x = self.conv(x[:, :, None])
         # for the first loss function label encoding
         if self.label_encoding:
             return x.squeeze(2)

@@ -13,14 +13,14 @@ import torch
 
 def main(args):
 
-    n_per = args.num_subs // args.n_folds
+    n_per = args.n_subs // args.n_folds
 
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
     class_names = ['Anger', 'Disgust', 'Fear', 'Sadness', 'Neutral', 'Amusement', 'Inspiration', 'Joy', 'Tenderness']
 
     # data_path = os.path.join(os.getcwd(), 'preprocessed_data', 'preprocessed_connectivity', 'processed_conn_30_mod_4.mat')
-    data_path = r'C:\Users\alajv\PycharmProjects\FullyComplexValuedMagnet\preprocessed_data\preprocessed_connectivity\'processed_conn_30_mod_4.mat'
+    data_path = r'C:\Users\alajv\PycharmProjects\FullyComplexValuedMagnet\preprocessed_data\preprocessed_connectivity\processed_conn_30_mod_4.mat'
 
     A_pdc = sio.loadmat(data_path)['data']
 
@@ -29,7 +29,7 @@ def main(args):
     for fold in tqdm(range(args.n_folds)):
 
         # root_dir = os.path.join(os.getcwd(), 'preprocessed_data', 'preprocessed_feature', 'smooth_preprocessed_28')
-        root_dir = r'C:\Users\alajv\PycharmProjects\FullyComplexValuedMagnet\preprocessed_data\preprocessed_feature'
+        root_dir = r'C:\Users\alajv\PycharmProjects\FullyComplexValuedMagnet\preprocessed_data\preprocessed_feature\smooth_preprocessed_28'
         data_dir = os.path.join(root_dir, 'de_lds_fold%d.mat' % (fold))
         feature_pdc = sio.loadmat(data_dir)['de_lds']
 
@@ -40,7 +40,7 @@ def main(args):
         else:
             val_sub = np.arange(n_per * fold, n_per * (fold + 1) - 1)
 
-        train_sub = list(set(np.arange(args.num_subs)) - set(val_sub))
+        train_sub = list(set(np.arange(args.n_subs)) - set(val_sub))
 
         data_train, A_pdc_train, label_train, data_test, A_pdc_test, label_test = train_test_split(
             train_sub,
@@ -54,6 +54,8 @@ def main(args):
             continue
         else:
             model = ChebNet(5, args=args).to(device)
+
+        print("number of trainable parameters", sum(p.numel() for p in model.parameters() if p.requires_grad))
 
         optimizer = optim.Adam(model.parameters(), lr=args.learning_rate)
 

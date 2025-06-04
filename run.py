@@ -1,5 +1,5 @@
 import argparse
-
+from main import main
 
 
 if __name__ == '__main__':
@@ -9,12 +9,12 @@ if __name__ == '__main__':
     # hyperparameters
     parser.add_argument("--n_subs", default=123, help="number of subjects in the dataset")
     parser.add_argument("--n_folds", default=10, help="specify the number of folds")
-    parser.add_argument("--label_type", default="cls_9", help="specify the number of classes in the dataset")
+    parser.add_argument("--label_type", default="cls9", help="specify the number of classes in the dataset")
     parser.add_argument("--epochs", default=50, help="number of epochs")
     parser.add_argument("--learning_rate", default=0.01, help="learning rate of the specified model")
     parser.add_argument("--dropout", default=0.2, help="specify the dropout ratio")
     parser.add_argument("--batch_size", default=64, help="batch size of the dataloader")
-    parser.add_argument("--q_value", default=0.01, help="magnetic q-value specification")
+    parser.add_argument("--q", default=0.01, help="magnetic q-value specification")
     parser.add_argument("--l2_normalization", default=5e-4,
                         help="apply l2 normalization to the optimization module")
     parser.add_argument("--proto_dim", default=128, help="dimension of the extracted prototypes")
@@ -22,6 +22,7 @@ if __name__ == '__main__':
     parser.add_argument("--num_filter", default=2, help="number of graph convolution layers")
     parser.add_argument("--distance_metric", default="L2",
                         help="define the distance metric between L1, L2 and orthogonal")
+    parser.add_argument("--num_heads", default=4, help="number of attention heads for each frequency band")
 
 
     # Different Model types
@@ -36,9 +37,9 @@ if __name__ == '__main__':
     parser.add_argument("--GMM", action="store_true",
                         help="whenever prototype selection specified for the mentioned prototypes")
 
-
     args = parser.parse_args()
 
+    main(args)
 
 
 

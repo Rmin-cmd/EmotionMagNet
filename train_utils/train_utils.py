@@ -26,12 +26,15 @@ def dataloader(data_train, label_train, A_pdc_train, data_val, label_val,  A_pdc
     feature_real_valid, feature_imag_valid = torch.FloatTensor(data_val.reshape(-1, data_val.shape[-1])).to(device),\
                                              torch.FloatTensor(data_val.reshape(-1, data_val.shape[-1])).to(device)
 
+    dataset_pdc_train = TensorDataset(torch.from_numpy(A_pdc_train.reshape(-1, 5,
+                                                       A_pdc_train.shape[1], A_pdc_train.shape[2])).to(device),
+                                                       feature_real_train, feature_imag_train,
+                                                       torch.from_numpy(label_train).to(device))
 
-    dataset_pdc_train = TensorDataset(torch.from_numpy(A_pdc_train).to(device), feature_real_train, feature_imag_train,
-                                torch.from_numpy(label_train).to(device))
-
-    dataset_pdc_valid = TensorDataset(torch.from_numpy(A_pdc_valid).to(device), feature_real_valid, feature_imag_valid,
-                                torch.from_numpy(label_val).to(device))
+    dataset_pdc_valid = TensorDataset(torch.from_numpy(A_pdc_valid.reshape(-1, 5,
+                                                       A_pdc_valid.shape[1], A_pdc_valid.shape[2])).to(device),
+                                                       feature_real_valid, feature_imag_valid,
+                                                       torch.from_numpy(label_val).to(device))
 
     train_loader = DataLoader(dataset_pdc_train, batch_size=batch_size, shuffle=True)
 
@@ -67,7 +70,7 @@ def train_valid(model, optimizer, epochs, train_loader, valid_loader, writer=Non
 
     scheduler = CosineAnnealingLR(optimizer, T_max=100, eta_min=0.01)
 
-    if args.label_encoding:
+    if not args.label_encoding:
         Loss = loss_fucntion_2(distance_metric=args.distance_metric, dist_features=args.proto_dim)
     # Loss = loss_fucntion_2(distance_metric='L2', dist_features=128)
 
