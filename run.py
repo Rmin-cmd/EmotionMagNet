@@ -17,11 +17,11 @@ if __name__ == '__main__':
     parser.add_argument("--n_folds", default=10, type=int, help="specify the number of folds")
     parser.add_argument("--label_type", default="cls9", type=str, help="specify the number of classes in the dataset")
     parser.add_argument("--epochs", default=50, type=int, help="number of epochs")
-    parser.add_argument("--learning_rate", default=0.01, type=int, help="learning rate of the specified model")
+    parser.add_argument("--learning_rate", default=0.001, type=int, help="learning rate of the specified model")
     parser.add_argument("--dropout", default=0.2, type=int, help="specify the dropout ratio")
     parser.add_argument("--batch_size", default=64, type=int, help="batch size of the dataloader")
     parser.add_argument("--q", default=0.01, type=int, help="magnetic q-value specification")
-    parser.add_argument("--l2_normalization", default=5e-4, type=int,
+    parser.add_argument("--l2_normalization", default=1e-7, type=int,
                         help="apply l2 normalization to the optimization module")
     parser.add_argument("--proto_dim", default=16, type=int, help="dimension of the extracted prototypes")
     parser.add_argument("--K", default=3, type=int, help="Number of chebyshev polynomials")
