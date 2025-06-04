@@ -6,7 +6,8 @@ import torch.nn as nn
 from tqdm import tqdm
 import time
 from utils.utils_loss import *
-from Model_magnet.encoding_loss_function import *
+# from Model_magnet.encoding_loss_function import * # Old import
+from Model_magnet.encoding_loss_function import UnifiedLoss # New import
 from sklearn.metrics import confusion_matrix
 from scipy.signal import hilbert
 import numpy as np
@@ -70,9 +71,20 @@ def train_valid(model, optimizer, epochs, train_loader, valid_loader, writer=Non
 
     scheduler = CosineAnnealingLR(optimizer, T_max=100, eta_min=0.01)
 
-    if not args.label_encoding:
-        Loss = loss_fucntion_2(distance_metric=args.distance_metric, dist_features=args.proto_dim)
-    # Loss = loss_fucntion_2(distance_metric='L2', dist_features=128)
+    # Instantiate UnifiedLoss
+    loss_type_arg = 'label_encoding' if args.label_encoding else 'prototype'
+    num_classes = 9 # As used in Metrics and matches typical emotion classes
+    label_encoding_temperature = 1.0 # Default for label_encoding mode
+
+    Loss = UnifiedLoss(
+        loss_type=loss_type_arg,
+        num_classes=num_classes,
+        distance_metric=args.distance_metric,
+        dist_features=args.proto_dim,
+        temperature=label_encoding_temperature, # Used by UnifiedLoss if loss_type is 'label_encoding'
+        gmm_lambda=args.gmm_lambda, # Added to run.py
+        criterion=criterion # Pass the nn.CrossEntropyLoss() instance
+    ).to(device)
 
     best_f1, best_err, early_stopping, best_loss = 0, np.inf, 0, 0
 
@@ -93,12 +105,9 @@ def train_valid(model, optimizer, epochs, train_loader, valid_loader, writer=Non
             count  = 0.0
             X_real, X_imag = X_real.reshape([-1, 30, 5]), X_imag.reshape([-1, 30, 5])
             preds = model(X_real, X_imag, graph)
-            # new loss definition
-            # train_loss, pred_label= loss_function(criterion, preds, labels, label, beta=beta, test_flag=True)
-            if args.label_encoding:
-                train_loss, pred_label= loss_function(criterion, preds, label, distance_metric=args.distance_metric)
-            else:
-                train_loss, pred_label = Loss(preds, label)
+
+            # Use UnifiedLoss instance
+            train_loss, pred_label = Loss(preds, label)
 
             loss_train += train_loss.detach().item()
             train_correct += (pred_label.squeeze() == label).sum().detach().item()
@@ -124,11 +133,9 @@ def train_valid(model, optimizer, epochs, train_loader, valid_loader, writer=Non
 
                 X_real, X_imag = X_real.reshape([-1, 30, 5]), X_imag.reshape([-1, 30, 5])
                 preds = model(X_real, X_imag, graph)
-                if args.label_encoding:
-                    valid_loss, pred_label = loss_function(criterion, preds, label,
-                                                           distance_metric=args.distance_metric)
-                else:
-                    valid_loss, pred_label = Loss(preds, label)
+
+                # Use UnifiedLoss instance
+                valid_loss, pred_label = Loss(preds, label)
 
                 loss_valid += valid_loss.detach().item()
                 pred_.append(pred_label) # Collect tensors

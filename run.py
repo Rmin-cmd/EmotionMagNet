@@ -30,6 +30,7 @@ if __name__ == '__main__':
                         help="define the distance metric between L1, L2 and orthogonal")
     parser.add_argument("--num_heads", default=4, help="number of attention heads for each frequency band")
     parser.add_argument("--in_channels", type=int, default=5, help="Number of input channels/features for the model")
+    parser.add_argument("--gmm_lambda", type=float, default=0.01, help="Lambda for GMM prototype regularization in prototype loss")
 
 
     # Different Model types
