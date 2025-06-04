@@ -23,7 +23,7 @@ if __name__ == '__main__':
     parser.add_argument("--q", default=0.01, type=int, help="magnetic q-value specification")
     parser.add_argument("--l2_normalization", default=1e-7, type=int,
                         help="apply l2 normalization to the optimization module")
-    parser.add_argument("--proto_dim", default=16, type=int, help="dimension of the extracted prototypes")
+    parser.add_argument("--proto_dim", default=128, type=int, help="dimension of the extracted prototypes")
     parser.add_argument("--K", default=3, type=int, help="Number of chebyshev polynomials")
     parser.add_argument("--num_filter", default=2, type=int, help="number of graph convolution layers")
     parser.add_argument("--distance_metric", default="L2", type=str,
