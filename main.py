@@ -85,7 +85,8 @@ def main(args):
             weight_decay=args.l2_normalization # Add this line
         )
 
-        writer = SummaryWriter(log_dir=f"runs/FCMagnet_zero_2/fold_{fold}")
+        writer = SummaryWriter(log_dir=f"runs/{loss_type_arg}_gmmLambda{args.gmm_lambda}_proto_dim_{args.proto_dim}"
+                                       f"/fold_{fold}")
 
         # Pass Loss_fn to train_valid (Remove epoch_grads from returned values if it's truly gone)
         # met_epochs, conf_mat_epochs, epoch_grads = train_valid(model, optimizer, epochs=args.epochs,
