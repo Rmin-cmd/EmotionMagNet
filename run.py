@@ -21,14 +21,14 @@ if __name__ == '__main__':
     parser.add_argument("--dropout", default=0.2, help="specify the dropout ratio")
     parser.add_argument("--batch_size", default=64, help="batch size of the dataloader")
     parser.add_argument("--q", default=0.01, help="magnetic q-value specification")
-    parser.add_argument("--l2_normalization", default=5e-4,
-                        help="apply l2 normalization to the optimization module")
+    parser.add_argument("--l2_normalization", default=1e-5, # Changed default
+                        help="apply l2 normalization to the optimization module (weight decay)")
     parser.add_argument("--proto_dim", default=128, help="dimension of the extracted prototypes")
     parser.add_argument("--K", default=3, help="Number of chebyshev polynomials")
     parser.add_argument("--num_filter", default=2, help="number of graph convolution layers")
     parser.add_argument("--distance_metric", default="L2",
                         help="define the distance metric between L1, L2 and orthogonal")
-    parser.add_argument("--num_heads", default=4, help="number of attention heads for each frequency band")
+    parser.add_argument("--num_heads", type=int, default=4, help="Number of attention heads for the multi-head attention GCN model") # Updated help message
     parser.add_argument("--in_channels", type=int, default=5, help="Number of input channels/features for the model")
     parser.add_argument("--gmm_lambda", type=float, default=0.01, help="Lambda for GMM prototype regularization in prototype loss")
 

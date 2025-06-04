@@ -3,8 +3,10 @@ import torch.optim as optim
 from utils import load_data
 import os
 from torch.utils.tensorboard import SummaryWriter
-from Model_magnet.Magnet_model_2 import ChebNet
-from Model_magnet.encoding_loss_function import UnifiedLoss # Import UnifiedLoss
+# from Model_magnet.Magnet_model_2 import ChebNet # Will be ChebNet_Original
+from Model_magnet.Magnet_model_2 import ChebNet as ChebNet_Original
+from Model_magnet.Magnet_model_multi_head_attention import ChebNet as ChebNet_MultiHead
+from Model_magnet.encoding_loss_function import UnifiedLoss # Import UnifiedLoss (already here)
 from train_utils.train_utils import *
 from scipy.stats import beta
 from tqdm import tqdm
@@ -49,11 +51,13 @@ def main(args):
 
         train_loader, valid_loader = dataloader(data_train, label_train, A_pdc_train, data_test, label_test, A_pdc_test, q=args.q,
                                                 K=args.K, batch_size=args.batch_size)
+
+        # Model selection
         if args.multi_head_attention:
-            # TODO: Add multiple head attention mechanism model here
-            continue
+            print(f"INFO: Using Multi-Head Attention GCN model for fold {fold}.")
+            model = ChebNet_MultiHead(in_c=args.in_channels, args=args).to(device)
         else:
-            model = ChebNet(args.in_channels, args=args).to(device)
+            model = ChebNet_Original(in_c=args.in_channels, args=args).to(device)
 
         # Instantiate UnifiedLoss here
         criterion_for_loss = torch.nn.CrossEntropyLoss() # Define criterion to be passed
