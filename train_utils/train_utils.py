@@ -87,9 +87,12 @@ def train_valid(model, optimizer, Loss, epochs, train_loader, valid_loader, writ
     #     criterion=criterion
     # ).to(device)
 
-    best_f1, best_err, early_stopping, best_loss = 0, np.inf, 0, 0
+    # Early stopping initialization
+    best_val_metric = 0.0 if args.early_stopping_monitor != 'loss' else float('inf')
+    epochs_no_improve = 0
+    # best_model_state = None # Optional: for restoring best model
 
-    # epoch_grads = {} # Removed
+    best_f1, best_err, early_stopping, best_loss = 0, np.inf, 0, 0 # These seem like old/alternative early stopping vars, consider removing if redundant
 
     for epoch in tqdm(range(epochs)):
 
@@ -179,9 +182,49 @@ def train_valid(model, optimizer, Loss, epochs, train_loader, valid_loader, writ
             writer.add_scalar("precision/val", final_metrics[2], epoch)
             writer.add_scalar("F1 Score", final_metrics[3], epoch)
 
+        # Early stopping check
+        # final_metrics = [accuracy, recall, precision, f1_score]
+        # loss_valid is sum of batch losses for validation
+
+        current_val_metric_for_early_stopping = 0.0
+        actual_val_loss_for_early_stopping = loss_valid / len(valid_loader) if len(valid_loader) > 0 else float('inf')
+
+        if args.early_stopping_monitor == 'f1_score':
+            current_val_metric_for_early_stopping = final_metrics[3] # F1-score
+        elif args.early_stopping_monitor == 'accuracy':
+            current_val_metric_for_early_stopping = final_metrics[0] # Accuracy
+        elif args.early_stopping_monitor == 'loss':
+            current_val_metric_for_early_stopping = actual_val_loss_for_early_stopping
+
+        if args.early_stopping_patience > 0: # Only if early stopping is enabled
+            if args.early_stopping_monitor != 'loss': # Higher is better (Accuracy, F1-score)
+                if current_val_metric_for_early_stopping - best_val_metric > args.early_stopping_min_delta:
+                    best_val_metric = current_val_metric_for_early_stopping
+                    epochs_no_improve = 0
+                    # if best_model_state is not None: best_model_state = model.state_dict() # Save best model
+                    print(f"EarlyStopping: New best {args.early_stopping_monitor}: {best_val_metric:.4f}")
+                else:
+                    epochs_no_improve += 1
+                    print(f"EarlyStopping: No improvement in {args.early_stopping_monitor} for {epochs_no_improve} epoch(s). Best: {best_val_metric:.4f}, Current: {current_val_metric_for_early_stopping:.4f}")
+            else: # Lower is better (loss)
+                if best_val_metric - current_val_metric_for_early_stopping > args.early_stopping_min_delta:
+                    best_val_metric = current_val_metric_for_early_stopping
+                    epochs_no_improve = 0
+                    # if best_model_state is not None: best_model_state = model.state_dict() # Save best model
+                    print(f"EarlyStopping: New best validation {args.early_stopping_monitor}: {best_val_metric:.4f}")
+                else:
+                    epochs_no_improve += 1
+                    print(f"EarlyStopping: No improvement in validation {args.early_stopping_monitor} for {epochs_no_improve} epoch(s). Best: {best_val_metric:.4f}, Current: {current_val_metric_for_early_stopping:.4f}")
+
+            if epochs_no_improve >= args.early_stopping_patience:
+                print(f"Early stopping triggered after {args.early_stopping_patience} epochs without improvement.")
+                # if best_model_state is not None: model.load_state_dict(best_model_state) # Restore best model
+                break # Exit the epoch loop
+
+
     if writer:
 
-        return epochs_metrics, conf_mat_epochs #, epoch_grads # Removed
+        return epochs_metrics, conf_mat_epochs
 
     else:
 
