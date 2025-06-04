@@ -1,12 +1,9 @@
 from torch.optim.lr_scheduler import CosineAnnealingLR
-
-from utils.hermitian import *
 from torch.utils.data import TensorDataset, DataLoader
 import torch.nn as nn
 from tqdm import tqdm
 import time
 from utils.utils_loss import *
-# from Model_magnet.encoding_loss_function import * # Old import
 from Model_magnet.encoding_loss_function import UnifiedLoss # New import
 from sklearn.metrics import confusion_matrix
 from scipy.signal import hilbert
@@ -180,7 +177,7 @@ def train_valid(model, optimizer, epochs, train_loader, valid_loader, writer=Non
 
     if writer:
 
-        return epochs_metrics, conf_mat_epochs #, epoch_grads # Removed
+        return epochs_metrics, conf_mat_epochs
 
     else:
 

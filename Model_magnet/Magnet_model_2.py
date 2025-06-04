@@ -153,7 +153,8 @@ class ChebNet(nn.Module):
 
         self.cheb_conv1 = ChebConv(in_c=in_c, out_c=args.num_filter, K=self.K, use_attention=args.simple_attention)
 
-        self.cheb_conv2 = ChebConv(in_c=args.num_filter, out_c=args.num_filter, K=self.K)
+        self.cheb_conv2 = ChebConv(in_c=args.num_filter, out_c=args.num_filter, K=self.K,
+                                   use_attention=args.simple_attention)
 
         last_dim = 1
         self.dropout = compnn.CVDropout(args.dropout)
@@ -163,7 +164,9 @@ class ChebNet(nn.Module):
         if args.label_encoding:
             self.conv = compnn.CVConv1d(30 * last_dim, 9, kernel_size=1)
         else:
+            print(type(args.proto_dim))
             self.conv = compnn.CVConv1d(30 * last_dim, args.proto_dim, kernel_size=1)
+
         #
         self.tanh = compnn.CVPolarTanh()
         self.bn = ComplexBatchNorm1d(30, affine=False)
@@ -194,8 +197,8 @@ class ChebNet(nn.Module):
         x = self.tanh(x)
         x = self.conv(x[:, :, None])
         # for the first loss function label encoding
-        if self.label_encoding:
-            return x.squeeze(2)
-        else:
-            return x
+        # if self.label_encoding:
+        return x.squeeze(2)
+        # else:
+        #     return x
 

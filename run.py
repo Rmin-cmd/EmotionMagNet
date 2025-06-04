@@ -13,22 +13,22 @@ if __name__ == '__main__':
                         help="Root directory for feature data")
 
     # hyperparameters
-    parser.add_argument("--n_subs", default=123, help="number of subjects in the dataset")
-    parser.add_argument("--n_folds", default=10, help="specify the number of folds")
-    parser.add_argument("--label_type", default="cls9", help="specify the number of classes in the dataset")
-    parser.add_argument("--epochs", default=50, help="number of epochs")
-    parser.add_argument("--learning_rate", default=0.01, help="learning rate of the specified model")
-    parser.add_argument("--dropout", default=0.2, help="specify the dropout ratio")
-    parser.add_argument("--batch_size", default=64, help="batch size of the dataloader")
-    parser.add_argument("--q", default=0.01, help="magnetic q-value specification")
-    parser.add_argument("--l2_normalization", default=5e-4,
+    parser.add_argument("--n_subs", default=123, type=int, help="number of subjects in the dataset")
+    parser.add_argument("--n_folds", default=10, type=int, help="specify the number of folds")
+    parser.add_argument("--label_type", default="cls9", type=str, help="specify the number of classes in the dataset")
+    parser.add_argument("--epochs", default=50, type=int, help="number of epochs")
+    parser.add_argument("--learning_rate", default=0.01, type=int, help="learning rate of the specified model")
+    parser.add_argument("--dropout", default=0.2, type=int, help="specify the dropout ratio")
+    parser.add_argument("--batch_size", default=64, type=int, help="batch size of the dataloader")
+    parser.add_argument("--q", default=0.01, type=int, help="magnetic q-value specification")
+    parser.add_argument("--l2_normalization", default=5e-4, type=int,
                         help="apply l2 normalization to the optimization module")
-    parser.add_argument("--proto_dim", default=128, help="dimension of the extracted prototypes")
-    parser.add_argument("--K", default=3, help="Number of chebyshev polynomials")
-    parser.add_argument("--num_filter", default=2, help="number of graph convolution layers")
-    parser.add_argument("--distance_metric", default="L2",
+    parser.add_argument("--proto_dim", default=16, type=int, help="dimension of the extracted prototypes")
+    parser.add_argument("--K", default=3, type=int, help="Number of chebyshev polynomials")
+    parser.add_argument("--num_filter", default=2, type=int, help="number of graph convolution layers")
+    parser.add_argument("--distance_metric", default="L2", type=str,
                         help="define the distance metric between L1, L2 and orthogonal")
-    parser.add_argument("--num_heads", default=4, help="number of attention heads for each frequency band")
+    parser.add_argument("--num_heads", default=4, type=int, help="number of attention heads for each frequency band")
     parser.add_argument("--in_channels", type=int, default=5, help="Number of input channels/features for the model")
     parser.add_argument("--gmm_lambda", type=float, default=0.01, help="Lambda for GMM prototype regularization in prototype loss")
 

@@ -5,6 +5,7 @@ import torch.nn.functional as F
 import torch.nn as nn
 import complextorch
 
+
 class UnifiedLoss(nn.Module):
     def __init__(self, loss_type, num_classes, distance_metric='L1',
                  dist_features=128, temperature=1.0, gmm_lambda=0.01,
@@ -163,7 +164,7 @@ class UnifiedLoss(nn.Module):
 
                 # weighted_sum: (5, F, C)
                 # einsum: 'bac,bf->afc' (b=batch, a=num_models_5, c=classes, f=features)
-                weighted_sum_gmm = torch.einsum('bac,bf->afc', responsibilities_gmm, preds_complex)
+                weighted_sum_gmm = torch.einsum('bac,bf->afc', responsibilities_gmm.to(torch.complex64), preds_complex)
 
                 sum_resp_gmm = responsibilities_gmm.sum(dim=0) # (5, C)
 
