@@ -19,28 +19,27 @@ def main(args):
 
     class_names = ['Anger', 'Disgust', 'Fear', 'Sadness', 'Neutral', 'Amusement', 'Inspiration', 'Joy', 'Tenderness']
 
-    # data_path = os.path.join(os.getcwd(), 'preprocessed_data', 'preprocessed_connectivity', 'processed_conn_30_mod_4.mat')
-    data_path = r'C:\Users\alajv\PycharmProjects\FullyComplexValuedMagnet\preprocessed_data\preprocessed_connectivity\processed_conn_30_mod_4.mat'
-
-    A_pdc = sio.loadmat(data_path)['data']
+    A_pdc = sio.loadmat(args.data_path)['data']
 
     acc_fold, recall_fold, precision_fold, f1_score_fold = [], [], [], []
 
+    all_subject_indices = np.arange(args.n_subs)
+    # Optional: np.random.shuffle(all_subject_indices) if folds should be random across runs
+
     for fold in tqdm(range(args.n_folds)):
 
-        # root_dir = os.path.join(os.getcwd(), 'preprocessed_data', 'preprocessed_feature', 'smooth_preprocessed_28')
-        root_dir = r'C:\Users\alajv\PycharmProjects\FullyComplexValuedMagnet\preprocessed_data\preprocessed_feature\smooth_preprocessed_28'
-        data_dir = os.path.join(root_dir, 'de_lds_fold%d.mat' % (fold))
+        data_dir = os.path.join(args.feature_root_dir, 'de_lds_fold%d.mat' % (fold))
         feature_pdc = sio.loadmat(data_dir)['de_lds']
 
         label_repeat = load_data.load_srt_de(feature_pdc, True, args.label_type, 11)
 
-        if fold < args.n_folds - 1:
-            val_sub = np.arange(n_per * fold, n_per * (fold + 1))
+        start_index = (args.n_subs // args.n_folds) * fold
+        end_index = (args.n_subs // args.n_folds) * (fold + 1)
+        if fold == args.n_folds - 1:
+            val_sub = all_subject_indices[start_index:]
         else:
-            val_sub = np.arange(n_per * fold, n_per * (fold + 1) - 1)
-
-        train_sub = list(set(np.arange(args.n_subs)) - set(val_sub))
+            val_sub = all_subject_indices[start_index:end_index]
+        train_sub = np.setdiff1d(all_subject_indices, val_sub)
 
         data_train, A_pdc_train, label_train, data_test, A_pdc_test, label_test = train_test_split(
             train_sub,
