@@ -83,34 +83,56 @@ class ChebConv(nn.Module):
             L_imag = laplacian.imag
 
         # Process with attention-adjusted Laplacian
-        mul_data = self.process(L_real, L_imag, self.weight_real, self.weight_imag, X_real, X_imag)
-        result = torch.sum(mul_data, dim=2)  # Sum over polynomial orders
-        # real = result[0] + self.bias_real
-        # imag = result[1] + self.bias_imag
-        return result[0], result[1]
+        # L_real, L_imag are from laplacian (B, K+1, N, N)
+        # X_real, X_imag are (B, N, C_in)
+        # self.weight_real, self.weight_imag are (K+1, C_in, C_out)
 
-    def process(self, L_real, L_imag, w_real, w_imag, X_real, X_imag):
-        # Batched matrix multiplication
-        def bmul(A, B):
-            return torch.einsum('bijk,bqjp->bijp', A, B)
+        processed_output = self.process(L_real, L_imag, self.weight_real, self.weight_imag, X_real, X_imag)
+        # processed_output is torch.stack([sum_LXW_real, sum_LXW_imag]), shape (2, B, N, C_out)
 
-        # Real component calculations
-        term1_real = bmul(L_real, X_real.unsqueeze(1))
-        term1_real = torch.matmul(term1_real, w_real)
+        # Bias addition was commented out, but if it were to be added:
+        # real_part = processed_output[0] + self.bias_real # self.bias_real is (1, C_out)
+        # imag_part = processed_output[1] + self.bias_imag # self.bias_imag is (1, C_out)
+        # return real_part, imag_part
 
-        term2_real = -1.0 * bmul(L_imag, X_imag.unsqueeze(1))
-        term2_real = torch.matmul(term2_real, w_imag)
-        real = term1_real + term2_real
+        return processed_output[0], processed_output[1] # No bias addition as per original commented out line
 
-        # Imaginary component calculations
-        term1_imag = bmul(L_imag, X_real.unsqueeze(1))
-        term1_imag = torch.matmul(term1_imag, w_real)
+    def process(self, L_real_poly, L_imag_poly, w_real_poly, w_imag_poly, X_node_real, X_node_imag):
+        # L_real_poly, L_imag_poly: (B, K+1, N, N)
+        # w_real_poly, w_imag_poly: (K+1, C_in, C_out)
+        # X_node_real, X_node_imag: (B, N, C_in)
+        # Output: sum_LXW_real, sum_LXW_imag of shape (B, N, C_out)
 
-        term2_imag = bmul(L_real, X_imag.unsqueeze(1))
-        term2_imag = torch.matmul(term2_imag, w_imag)
-        imag = term1_imag + term2_imag
+        B, K_plus_1, N, _ = L_real_poly.shape
+        C_in = X_node_real.shape[-1]
+        C_out = w_real_poly.shape[-1]
 
-        return torch.stack([real, imag])
+        sum_LXW_real = torch.zeros(B, N, C_out, device=X_node_real.device)
+        sum_LXW_imag = torch.zeros(B, N, C_out, device=X_node_real.device)
+
+        for k in range(K_plus_1):
+            Lk_real = L_real_poly[:, k, :, :]  # (B, N, N)
+            Lk_imag = L_imag_poly[:, k, :, :]  # (B, N, N)
+
+            Wk_real = w_real_poly[k, :, :]    # (C_in, C_out)
+            Wk_imag = w_imag_poly[k, :, :]    # (C_in, C_out)
+
+            # Compute Lk @ X_node = (Lk_real + i*Lk_imag) @ (X_node_real + i*X_node_imag)
+            # LX_real_k = Lk_real @ X_node_real - Lk_imag @ X_node_imag
+            # LX_imag_k = Lk_real @ X_node_imag + Lk_imag @ X_node_real
+
+            # Using torch.matmul which handles batching.
+            LX_real_k = torch.matmul(Lk_real, X_node_real) - torch.matmul(Lk_imag, X_node_imag) # (B,N,C_in)
+            LX_imag_k = torch.matmul(Lk_real, X_node_imag) + torch.matmul(Lk_imag, X_node_real) # (B,N,C_in)
+
+            # Compute (Lk @ X_node) @ Wk = (LX_real_k + i*LX_imag_k) @ (Wk_real + i*Wk_imag)
+            # LXW_real_k = LX_real_k @ Wk_real - LX_imag_k @ Wk_imag
+            # LXW_imag_k = LX_real_k @ Wk_imag + LX_imag_k @ Wk_real
+
+            sum_LXW_real += torch.matmul(LX_real_k, Wk_real) - torch.matmul(LX_imag_k, Wk_imag)
+            sum_LXW_imag += torch.matmul(LX_real_k, Wk_imag) + torch.matmul(LX_imag_k, Wk_real)
+
+        return torch.stack([sum_LXW_real, sum_LXW_imag])
 
 
 class ChebNet(nn.Module):

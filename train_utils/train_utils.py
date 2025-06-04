@@ -17,14 +17,14 @@ device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
 def dataloader(data_train, label_train, A_pdc_train, data_val, label_val,  A_pdc_valid, q, K, batch_size):
 
-    # feature_imag_train = np.imag(hilbert(data_train, axis=-1))
-    # feature_imag_valid = np.imag(hilbert(data_val, axis=-1))
+    data_train_reshaped = data_train.reshape(-1, data_train.shape[-1]).astype(np.float32)
+    data_val_reshaped = data_val.reshape(-1, data_val.shape[-1]).astype(np.float32)
 
-    feature_real_train, feature_imag_train = torch.FloatTensor(data_train.reshape(-1, data_train.shape[-1])).to(device),\
-                                             torch.FloatTensor(data_train.reshape(-1, data_train.shape[-1])).to(device)
+    feature_real_train = torch.FloatTensor(data_train_reshaped).to(device)
+    feature_imag_train = torch.FloatTensor(np.imag(hilbert(data_train_reshaped, axis=-1))).to(device)
 
-    feature_real_valid, feature_imag_valid = torch.FloatTensor(data_val.reshape(-1, data_val.shape[-1])).to(device),\
-                                             torch.FloatTensor(data_val.reshape(-1, data_val.shape[-1])).to(device)
+    feature_real_valid = torch.FloatTensor(data_val_reshaped).to(device)
+    feature_imag_valid = torch.FloatTensor(np.imag(hilbert(data_val_reshaped, axis=-1))).to(device)
 
     dataset_pdc_train = TensorDataset(torch.from_numpy(A_pdc_train.reshape(-1, 5,
                                                        A_pdc_train.shape[1], A_pdc_train.shape[2])).to(device),
@@ -76,7 +76,7 @@ def train_valid(model, optimizer, epochs, train_loader, valid_loader, writer=Non
 
     best_f1, best_err, early_stopping, best_loss = 0, np.inf, 0, 0
 
-    epoch_grads = {}
+    # epoch_grads = {} # Removed
 
     for epoch in tqdm(range(epochs)):
 
@@ -118,7 +118,6 @@ def train_valid(model, optimizer, epochs, train_loader, valid_loader, writer=Non
 
             for i, (graph, X_real, X_imag, label) in enumerate(valid_loader):
                 start_time = time.time()
-                labels = label_encoding(label)
                 ####################
                 # Valid
                 ####################
@@ -132,11 +131,19 @@ def train_valid(model, optimizer, epochs, train_loader, valid_loader, writer=Non
                     valid_loss, pred_label = Loss(preds, label)
 
                 loss_valid += valid_loss.detach().item()
-                pred_ += pred_label
-                label_ += label.tolist()
+                pred_.append(pred_label) # Collect tensors
+                label_.extend(label.tolist()) # Extend list with batch labels
 
-        final_metrics = met_calc.compute_metrics(torch.tensor([pred_]).to(device),
-                                 torch.tensor([label_]).to(device))
+        # pred_ is a list of tensors (predicted labels per batch)
+        # label_ is a list of integers (true labels)
+        if pred_: # Ensure pred_ is not empty
+            all_preds_tensor = torch.cat(pred_).to(device)
+        else: # Handle case where validation loader might be empty or no predictions made
+            all_preds_tensor = torch.empty(0, dtype=torch.long).to(device)
+
+        all_labels_tensor = torch.tensor(label_, dtype=torch.long).to(device) # label_ is already a flat list of ints
+
+        final_metrics = met_calc.compute_metrics(all_preds_tensor, all_labels_tensor)
 
 
         if writer:
@@ -144,16 +151,17 @@ def train_valid(model, optimizer, epochs, train_loader, valid_loader, writer=Non
             epochs_metrics.append(final_metrics)
 
             outstrtrain = 'epoch:%d, Valid loss: %.6f, accuracy: %.3f, recall:%.3f, precision:%.3f, F1-score:%.3f' % \
-                          (epoch, loss_valid / len(valid_loader), final_metrics[0], final_metrics[1], final_metrics[2],
+                          (epoch, (loss_valid / len(valid_loader)) if len(valid_loader) > 0 else 0.0, final_metrics[0], final_metrics[1], final_metrics[2],
                            final_metrics[3])
 
             print(outstrtrain)
 
-            pred_np, label_np = np.array(torch.tensor(pred_).tolist()), np.array(torch.tensor(label_).tolist())
+            # For confusion matrix, ensure tensors are on CPU and converted to numpy
+            conf_mat_preds = all_preds_tensor.cpu().numpy()
+            conf_mat_labels = all_labels_tensor.cpu().numpy()
+            conf_mat_epochs.append(confusion_matrix(conf_mat_labels, conf_mat_preds))
 
-            conf_mat_epochs.append(confusion_matrix(label_np, pred_np))
-
-            writer.add_scalars('Loss', {'Train': loss_train / len(train_loader),
+            writer.add_scalars('Loss', {'Train': (loss_train / len(train_loader)) if len(train_loader) > 0 else 0.0,
                                         'Validation': loss_valid / len(valid_loader)}, epoch)
 
             writer.add_scalars("Accuracy", {'Train': train_correct / len(train_loader.dataset),
@@ -165,7 +173,7 @@ def train_valid(model, optimizer, epochs, train_loader, valid_loader, writer=Non
 
     if writer:
 
-        return epochs_metrics, conf_mat_epochs, epoch_grads
+        return epochs_metrics, conf_mat_epochs #, epoch_grads # Removed
 
     else:
 

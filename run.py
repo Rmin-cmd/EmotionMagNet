@@ -6,6 +6,12 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser("Emotion Recognition Using Magnetic Graph Convolution")
 
+    # Data paths
+    parser.add_argument("--data_path", default='./data/connectivity.mat',
+                        help="Path to the connectivity data MAT file")
+    parser.add_argument("--feature_root_dir", default='./data/features',
+                        help="Root directory for feature data")
+
     # hyperparameters
     parser.add_argument("--n_subs", default=123, help="number of subjects in the dataset")
     parser.add_argument("--n_folds", default=10, help="specify the number of folds")
@@ -23,6 +29,7 @@ if __name__ == '__main__':
     parser.add_argument("--distance_metric", default="L2",
                         help="define the distance metric between L1, L2 and orthogonal")
     parser.add_argument("--num_heads", default=4, help="number of attention heads for each frequency band")
+    parser.add_argument("--in_channels", type=int, default=5, help="Number of input channels/features for the model")
 
 
     # Different Model types
