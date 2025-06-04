@@ -4,6 +4,7 @@ from utils import load_data
 import os
 from torch.utils.tensorboard import SummaryWriter
 from Model_magnet.Magnet_model_2 import ChebNet
+from Model_magnet.encoding_loss_function import UnifiedLoss # Import UnifiedLoss
 from train_utils.train_utils import *
 from scipy.stats import beta
 from tqdm import tqdm
@@ -52,15 +53,42 @@ def main(args):
             # TODO: Add multiple head attention mechanism model here
             continue
         else:
-            model = ChebNet(5, args=args).to(device)
+            model = ChebNet(args.in_channels, args=args).to(device)
 
-        print("number of trainable parameters", sum(p.numel() for p in model.parameters() if p.requires_grad))
+        # Instantiate UnifiedLoss here
+        criterion_for_loss = torch.nn.CrossEntropyLoss() # Define criterion to be passed
+        loss_type_arg = 'label_encoding' if args.label_encoding else 'prototype'
+        num_classes = 9 # Or derive from data/args if it can change
+        label_encoding_temperature = 1.0
 
-        optimizer = optim.Adam(model.parameters(), lr=args.learning_rate)
+        Loss_fn = UnifiedLoss(
+            loss_type=loss_type_arg,
+            num_classes=num_classes,
+            distance_metric=args.distance_metric,
+            dist_features=args.proto_dim,
+            temperature=label_encoding_temperature,
+            gmm_lambda=args.gmm_lambda,
+            criterion=criterion_for_loss
+        ).to(device)
+
+        # Print number of trainable parameters for model and loss
+        model_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
+        loss_params = sum(p.numel() for p in Loss_fn.parameters() if p.requires_grad)
+        print(f"Number of trainable model parameters: {model_params}")
+        print(f"Number of trainable loss parameters: {loss_params}")
+        print(f"Total trainable parameters: {model_params + loss_params}")
+
+
+        optimizer = optim.Adam(
+            list(model.parameters()) + list(Loss_fn.parameters()),
+            lr=args.learning_rate
+        )
 
         writer = SummaryWriter(log_dir=f"runs/FCMagnet_zero_2/fold_{fold}")
 
-        met_epochs, conf_mat_epochs, epoch_grads = train_valid(model, optimizer, epochs=args.epochs,
+        # Pass Loss_fn to train_valid (Remove epoch_grads from returned values if it's truly gone)
+        # met_epochs, conf_mat_epochs, epoch_grads = train_valid(model, optimizer, epochs=args.epochs,
+        met_epochs, conf_mat_epochs = train_valid(model, optimizer, Loss_fn, epochs=args.epochs,
                                                                train_loader=train_loader,
                                                                valid_loader=valid_loader, writer=writer,
                                                                args=args)

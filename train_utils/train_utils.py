@@ -56,32 +56,33 @@ def train_test_split(train_sub, val_sub, feature_de, Adj, label_repeat):
     return data_train, A_pdc_train, label_train, data_val, A_pdc_valid, label_val
 
 
-def train_valid(model, optimizer, epochs, train_loader, valid_loader, writer=None, **kwargs):
+# Changed signature to accept Loss object
+def train_valid(model, optimizer, Loss, epochs, train_loader, valid_loader, writer=None, **kwargs):
 
-    criterion = nn.CrossEntropyLoss()
+    # criterion = nn.CrossEntropyLoss() # Loss object now handles its own criterion if needed or passed at init
 
     args = kwargs['args']
 
     epochs_f1, epochs_loss, epochs_metrics, conf_mat_epochs = [], [], [], []
 
-    met_calc = Metrics(num_class=9)
+    met_calc = Metrics(num_class=9) # Assuming num_classes is consistently 9
 
     scheduler = CosineAnnealingLR(optimizer, T_max=100, eta_min=0.01)
 
-    # Instantiate UnifiedLoss
-    loss_type_arg = 'label_encoding' if args.label_encoding else 'prototype'
-    num_classes = 9 # As used in Metrics and matches typical emotion classes
-    label_encoding_temperature = 1.0 # Default for label_encoding mode
+    # # Instantiate UnifiedLoss - This is now done in main.py
+    # loss_type_arg = 'label_encoding' if args.label_encoding else 'prototype'
+    # num_classes = 9
+    # label_encoding_temperature = 1.0
 
-    Loss = UnifiedLoss(
-        loss_type=loss_type_arg,
-        num_classes=num_classes,
-        distance_metric=args.distance_metric,
-        dist_features=args.proto_dim,
-        temperature=label_encoding_temperature, # Used by UnifiedLoss if loss_type is 'label_encoding'
-        gmm_lambda=args.gmm_lambda, # Added to run.py
-        criterion=criterion # Pass the nn.CrossEntropyLoss() instance
-    ).to(device)
+    # Loss_instance = UnifiedLoss( # Renamed to avoid conflict with passed Loss
+    #     loss_type=loss_type_arg,
+    #     num_classes=num_classes,
+    #     distance_metric=args.distance_metric,
+    #     dist_features=args.proto_dim,
+    #     temperature=label_encoding_temperature,
+    #     gmm_lambda=args.gmm_lambda,
+    #     criterion=criterion
+    # ).to(device)
 
     best_f1, best_err, early_stopping, best_loss = 0, np.inf, 0, 0
 
