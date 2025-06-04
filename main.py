@@ -60,7 +60,7 @@ def main(args):
 
         writer = SummaryWriter(log_dir=f"runs/FCMagnet_zero_2/fold_{fold}")
 
-        met_epochs, conf_mat_epochs = train_valid(model, optimizer, epochs=args.epochs,
+        met_epochs, conf_mat_epochs, epoch_grads = train_valid(model, optimizer, epochs=args.epochs,
                                                                train_loader=train_loader,
                                                                valid_loader=valid_loader, writer=writer,
                                                                args=args)
