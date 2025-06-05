@@ -237,7 +237,7 @@ class ChebNet(nn.Module):
             out_c=self.num_filters,
             K=self.K,
             num_heads=self.num_heads,
-            use_attention=args.simple_attention,
+            use_attention=True,
             concat_heads=self.concat_heads_chebconv
         )
 

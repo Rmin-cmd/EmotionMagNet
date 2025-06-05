@@ -23,7 +23,7 @@ if __name__ == '__main__':
     parser.add_argument("--q", default=0.01, help="magnetic q-value specification")
     parser.add_argument("--l2_normalization", default=1e-5, # Changed default
                         help="apply l2 normalization to the optimization module (weight decay)")
-    parser.add_argument("--proto_dim", default=128, help="dimension of the extracted prototypes")
+    parser.add_argument("--proto_dim", type=int, default=128, help="dimension of the extracted prototypes")
     parser.add_argument("--K", default=3, help="Number of chebyshev polynomials")
     parser.add_argument("--num_filter", default=2, help="number of graph convolution layers")
     parser.add_argument("--distance_metric", default="L2",
@@ -40,11 +40,11 @@ if __name__ == '__main__':
     # Different Model types
     parser.add_argument("--FFT-or-not", action='store_true',
                         help="imaginary part calculated from the fourier transform")
-    parser.add_argument("--label_encoding", action='store_true',
+    parser.add_argument("--label_encoding", action='store_false',
                         help="encode labels on the 2-d plane of the valence-arousal")
     parser.add_argument("--simple_attention", action="store_true",
                         help="a simple attention applied on the features")
-    parser.add_argument("--multi_head_attention", action="store_true",
+    parser.add_argument("--multi_head_attention", action="store_false",
                         help="apply an attention mechanism on the specified model")
     parser.add_argument("--GMM", action="store_true",
                         help="whenever prototype selection specified for the mentioned prototypes")
