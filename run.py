@@ -40,11 +40,11 @@ if __name__ == '__main__':
     # Different Model types
     parser.add_argument("--FFT-or-not", action='store_true',
                         help="imaginary part calculated from the fourier transform")
-    parser.add_argument("--label_encoding", action='store_false',
+    parser.add_argument("--label_encoding", action='store_true',
                         help="encode labels on the 2-d plane of the valence-arousal")
     parser.add_argument("--simple_attention", action="store_true",
                         help="a simple attention applied on the features")
-    parser.add_argument("--multi_head_attention", action="store_false",
+    parser.add_argument("--multi_head_attention", action="store_true",
                         help="apply an attention mechanism on the specified model")
     parser.add_argument("--GMM", action="store_true",
                         help="whenever prototype selection specified for the mentioned prototypes")
