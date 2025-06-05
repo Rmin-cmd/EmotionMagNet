@@ -82,22 +82,6 @@ class ChebConv(nn.Module):
             attention_magnitude_sq = scores_re_masked**2 + scores_im_masked**2 # Using masked real part for magnitude
             attn_weights_magnitude = F.softmax(attention_magnitude_sq, dim=-1) # [B, num_heads, N, N]
 
-            # attn_weights_phase = scores_perm.imag.atan2(scores_perm.real) # Phase if needed
-            # For now, only magnitude-based attention weights are used for weighting Laplacian
-
-            # Unsqueeze for broadcasting over K+1 polynomials and N_i, N_j
-            # attn_weights_magnitude is [B, num_heads, N_i, N_j]
-            # We need to make it [B, 1, N_j, N_i, num_heads] if we want to use it as L_att = L * att
-            # Or [B, K+1, N_j, N_i, num_heads] after expansion
-
-            # The user code expanded laplacian and then multiplied.
-            # L_real_orig_expanded = L_real_poly_full.unsqueeze(-1).expand(-1, -1, -1, -1, self.num_heads) # [B, K+1, N, N, num_heads]
-            # L_imag_orig_expanded = L_imag_poly_full.unsqueeze(-1).expand(-1, -1, -1, -1, self.num_heads) # [B, K+1, N, N, num_heads]
-            # attn_weights_to_mult = attn_weights_magnitude.permute(0,2,3,1).unsqueeze(1) # [B, 1, N, N, num_heads]
-
-            # L_real_att = L_real_orig_expanded * attn_weights_to_mult # Element-wise
-            # L_imag_att = L_imag_orig_expanded * attn_weights_to_mult # Element-wise
-
             # Simpler: laplacian_output_real/imag will be [B, K+1, N, N, num_heads]
             # attn_weights_magnitude is [B, num_heads, N, N] -> permute to [B, N, N, num_heads] then unsqueeze for K
             attn_for_lap = attn_weights_magnitude.permute(0,2,3,1).unsqueeze(1) # [B, 1, N, N, num_heads]
@@ -289,8 +273,7 @@ class ChebNet(nn.Module):
             current_band_graph = graph[:, i, :, :] # Shape (B, N, N)
 
             # Ensure current_band_graph is on the correct device before passing to decomp
-            current_band_graph_device = current_band_graph.to(device if her_mat_list_needs_device else current_band_graph.device)
-
+            current_band_graph_device = current_band_graph.to(current_band_graph.device)
 
             her_mat_list_for_band = [decomp(data_item, self.q, norm=True, laplacian=True, max_eigen=2, gcn_appr=True)
                                      for data_item in current_band_graph_device]

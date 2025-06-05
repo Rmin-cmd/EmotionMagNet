@@ -52,14 +52,14 @@ class UnifiedLoss(nn.Module):
             preds_complex = preds.complex if isinstance(preds, complextorch.CVTensor) else preds
 
             # Assuming model output for 'label_encoding' is (B) or (B,1) complex numbers.
-            if preds_complex.ndim > 1 and preds_complex.shape[-1] == 1:
+            if preds_complex.ndim > 2 and preds_complex.shape[-1] == 1:
                 preds_complex = preds_complex.squeeze(-1)
 
-            if preds_complex.ndim > 1 :
+            if preds_complex.ndim > 2 :
                  raise ValueError(f"Predictions for label_encoding loss have unexpected shape: {preds_complex.shape}. Expected (B) or (B,1).")
 
-            # preds_complex is (B), _label_en is (C)
-            # Unsqueeze for broadcasting: preds (B,1), label_en (1,C) -> distances (B,C)
+            # preds_complex is (B, C), _label_en is (C)
+            # Unsqueeze for broadcasting: preds (B,1, C), label_en (1,C) -> distances (B,C)
             preds_exp = preds_complex.unsqueeze(1)
             label_exp = _label_en.unsqueeze(0)
 
@@ -91,7 +91,7 @@ class UnifiedLoss(nn.Module):
             else:
                 raise ValueError(f"Unknown distance_metric: {self.distance_metric} for label_encoding")
 
-            logits = -distances / self.temperature
+            logits = -distances.squeeze() / self.temperature
             loss = self.criterion(logits, labels_long)
             probabilities = torch.softmax(logits, dim=1)
             predicted_labels = torch.argmax(probabilities, dim=1)

@@ -38,7 +38,7 @@ if __name__ == '__main__':
     parser.add_argument("--early_stopping_monitor", type=str, default="f1_score", choices=["f1_score", "accuracy", "loss"], help="Metric to monitor for early stopping (f1_score, accuracy, or loss)")
 
     # Different Model types
-    parser.add_argument("--FFT-or-not", action='store_false',
+    parser.add_argument("--FFT-or-not", action='store_true',
                         help="imaginary part calculated from the fourier transform")
     parser.add_argument("--label_encoding", action='store_true',
                         help="encode labels on the 2-d plane of the valence-arousal")
