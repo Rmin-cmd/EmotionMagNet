@@ -37,6 +37,8 @@ class UnifiedLoss(nn.Module):
             self.temp_param = nn.Parameter(torch.tensor(float(temperature)))
             self.log_sigma_param = nn.Parameter(torch.zeros(1, 5, self.num_classes))
             self.gmm_lambda = float(gmm_lambda)
+        elif self.loss_type == 'simple':
+            pass
         else:
             raise ValueError(f"Unknown loss_type: {loss_type}")
 
@@ -178,7 +180,20 @@ class UnifiedLoss(nn.Module):
             predicted_labels = torch.argmax(probabilities, dim=1)
             return total_loss, predicted_labels
 
+        elif self.loss_type == 'simple':
+
+            # for simple magnet
+            logits = preds.abs()
+
+            total_loss = self.criterion(logits, labels_long)
+
+            probabilities = torch.softmax(logits, dim=1)
+            predicted_labels = torch.argmax(probabilities, dim=1)
+
+            return total_loss, predicted_labels
+
         else:
+
             raise ValueError(f"Unknown loss_type in forward: {self.loss_type}")
 
 # Old code (loss_function, loss_fucntion_2, label_encoding, and device variable) is removed.

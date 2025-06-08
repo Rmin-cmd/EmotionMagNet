@@ -1,10 +1,8 @@
 from torch.optim.lr_scheduler import CosineAnnealingLR
 from torch.utils.data import TensorDataset, DataLoader
-import torch.nn as nn
 from tqdm import tqdm
 import time
 from utils.utils_loss import *
-from Model_magnet.encoding_loss_function import UnifiedLoss # New import
 from sklearn.metrics import confusion_matrix
 from scipy.signal import hilbert
 import numpy as np
@@ -65,7 +63,7 @@ def train_valid(model, optimizer, Loss, epochs, train_loader, valid_loader, writ
 
     epochs_f1, epochs_loss, epochs_metrics, conf_mat_epochs = [], [], [], []
 
-    met_calc = Metrics(num_class=9) # Assuming num_classes is consistently 9
+    met_calc = Metrics(num_class=args.num_classes) # Assuming num_classes is consistently 9
 
     scheduler = CosineAnnealingLR(optimizer, T_max=100, eta_min=0.01)
 

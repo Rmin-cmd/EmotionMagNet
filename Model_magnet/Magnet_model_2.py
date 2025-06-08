@@ -161,15 +161,15 @@ class ChebNet(nn.Module):
         # for the first loss function on label encoding
         # self.conv = compnn.CVConv1d(30 * last_dim, label_dim, kernel_size=1)
         # for the second loss function on class prototypes
-        if args.label_encoding:
-            self.conv = compnn.CVConv1d(30 * last_dim, 9, kernel_size=1)
+        if args.label_encoding or args.simple_magnet:
+            self.conv = compnn.CVConv1d(30 * last_dim, args.num_classes, kernel_size=1)
         else:
             print(type(args.proto_dim))
             self.conv = compnn.CVConv1d(30 * last_dim, args.proto_dim, kernel_size=1)
 
         #
         self.tanh = compnn.CVPolarTanh()
-        self.bn = ComplexBatchNorm1d(30, affine=False)
+        self.bn = ComplexBatchNorm1d(30)
 
     def complex_relu(self, real, img):
         mask = 1.0 * (real >= 0)

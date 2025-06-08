@@ -1,5 +1,5 @@
 import numpy as np
-import scipy.io as sio
+# import scipy.io as sio
 
 
 def load_srt_de(data, channel_norm,label_type, num_windows):
@@ -13,6 +13,16 @@ def load_srt_de(data, channel_norm,label_type, num_windows):
 
     n_samples_cum = np.concatenate(
         (np.array([0]), np.cumsum(n_samples)))  # (0,30,60,...,810,840)
+
+    # if label_type == 'cls2':
+    #     data = data.reshape([data.shape[0], -1, num_windows, data.shape[2]])
+    #     vid_sel = list(range(12))
+    #     vid_sel.extend(list(range(16,28)))
+    #     data = data[:, vid_sel, :, :] # sub, vid, n_channs, n_points
+    #     data = data.reshape([data.shape[0], -1, data.shape[2]])
+    #     n_videos = 24
+    # else:
+    #     n_videos = 28
 
 
     # Normalization for each sub

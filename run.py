@@ -15,13 +15,15 @@ if __name__ == '__main__':
     # hyperparameters
     parser.add_argument("--n_subs", default=123, help="number of subjects in the dataset")
     parser.add_argument("--n_folds", default=10, help="specify the number of folds")
-    parser.add_argument("--label_type", default="cls9", help="specify the number of classes in the dataset")
-    parser.add_argument("--epochs", default=50, help="number of epochs")
-    parser.add_argument("--learning_rate", default=0.01, help="learning rate of the specified model")
-    parser.add_argument("--dropout", default=0.2, help="specify the dropout ratio")
+    parser.add_argument("--num_classes", type=int, default=9,
+                        help="specify the number of classes in the dataset")
+    parser.add_argument("--epochs", type=int, default=50, help="number of epochs")
+    parser.add_argument("--learning_rate", type=float, default=0.01,
+                        help="learning rate of the specified model")
+    parser.add_argument("--dropout", type=float, default=0.2, help="specify the dropout ratio")
     parser.add_argument("--batch_size", default=64, help="batch size of the dataloader")
     parser.add_argument("--q", default=0.01, help="magnetic q-value specification")
-    parser.add_argument("--l2_normalization", default=1e-5, # Changed default
+    parser.add_argument("--l2_normalization", type=float, default=1e-5, # Changed default
                         help="apply l2 normalization to the optimization module (weight decay)")
     parser.add_argument("--proto_dim", type=int, default=128, help="dimension of the extracted prototypes")
     parser.add_argument("--K", default=3, help="Number of chebyshev polynomials")
@@ -40,6 +42,7 @@ if __name__ == '__main__':
     # Different Model types
     parser.add_argument("--FFT-or-not", action='store_true',
                         help="imaginary part calculated from the fourier transform")
+    parser.add_argument("--simple_magnet", action='store_true', help= "simple magnetic graph convolution")
     parser.add_argument("--label_encoding", action='store_true',
                         help="encode labels on the 2-d plane of the valence-arousal")
     parser.add_argument("--simple_attention", action="store_true",

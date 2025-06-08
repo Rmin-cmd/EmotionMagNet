@@ -3,26 +3,29 @@ import torch.optim as optim
 from utils import load_data
 import os
 from torch.utils.tensorboard import SummaryWriter
-# from Model_magnet.Magnet_model_2 import ChebNet # Will be ChebNet_Original
 from Model_magnet.Magnet_model_2 import ChebNet as ChebNet_Original
 from Model_magnet.Magnet_model_multi_head_attention import ChebNet as ChebNet_MultiHead
-from Model_magnet.encoding_loss_function import UnifiedLoss # Import UnifiedLoss (already here)
 from train_utils.train_utils import *
-from scipy.stats import beta
 from tqdm import tqdm
 import numpy as np
 import torch
 
+from datetime import datetime
+today_date = str(datetime.now())
+today_date = today_date[:today_date.find('.')]
+today_date = today_date.replace(' ', '/')
+today_date = today_date.replace(':', '_')
+exp = 'experiment_' + today_date
 
 def main(args):
 
     n_per = args.n_subs // args.n_folds
 
+    num_windows = 11
+
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
     class_names = ['Anger', 'Disgust', 'Fear', 'Sadness', 'Neutral', 'Amusement', 'Inspiration', 'Joy', 'Tenderness']
-
-    A_pdc = sio.loadmat(args.data_path)['data']
 
     acc_fold, recall_fold, precision_fold, f1_score_fold = [], [], [], []
 
@@ -34,7 +37,22 @@ def main(args):
         data_dir = os.path.join(args.feature_root_dir, 'de_lds_fold%d.mat' % (fold))
         feature_pdc = sio.loadmat(data_dir)['de_lds']
 
-        label_repeat = load_data.load_srt_de(feature_pdc, True, args.label_type, 11)
+        A_pdc = sio.loadmat(args.data_path)['data']
+
+        if args.num_classes == 9:
+            label_type = "cls9" # Or derive from data/args if it can change
+        elif args.num_classes == 2:
+            feature_pdc = feature_pdc.reshape([feature_pdc.shape[0], -1, num_windows, feature_pdc.shape[2]])
+            vid_sel = list(range(12))
+            vid_sel.extend(list(range(16, 28)))
+            feature_pdc = feature_pdc[:, vid_sel, :, :]  # sub, vid, n_channs, n_points
+            A_pdc = A_pdc[:, :, vid_sel, :, :, :]
+            feature_pdc = feature_pdc.reshape([feature_pdc.shape[0], -1, feature_pdc.shape[3]])
+            label_type = "cls2"
+        else:
+            raise ValueError("number of specified classes should be 2 or 9")
+
+        label_repeat = load_data.load_srt_de(feature_pdc, False, label_type, num_windows)
 
         start_index = (args.n_subs // args.n_folds) * fold
         end_index = (args.n_subs // args.n_folds) * (fold + 1)
@@ -61,13 +79,16 @@ def main(args):
 
         # Instantiate UnifiedLoss here
         criterion_for_loss = torch.nn.CrossEntropyLoss() # Define criterion to be passed
-        loss_type_arg = 'label_encoding' if args.label_encoding else 'prototype'
-        num_classes = 9 # Or derive from data/args if it can change
+        if not args.simple_magnet:
+            loss_type_arg = 'label_encoding' if args.label_encoding else 'prototype'
+        else:
+            loss_type_arg = 'simple'
+
         label_encoding_temperature = 1.0
 
         Loss_fn = UnifiedLoss(
             loss_type=loss_type_arg,
-            num_classes=num_classes,
+            num_classes=args.num_classes,
             distance_metric=args.distance_metric,
             dist_features=args.proto_dim,
             temperature=label_encoding_temperature,
@@ -89,7 +110,9 @@ def main(args):
             weight_decay=args.l2_normalization # Add this line
         )
 
-        writer = SummaryWriter(log_dir=f"runs/{loss_type_arg}_gmmLambda{args.gmm_lambda}_proto_dim_{args.proto_dim}"
+        writer = SummaryWriter(log_dir=f"runs/{exp}/num_classes_{args.num_classes}_{loss_type_arg}"
+                                       f"_gmmLambda{args.gmm_lambda}_proto_dim_{args.proto_dim}"
+                                       f"_multi_head_{args.multi_head_attention}"
                                        f"/fold_{fold}")
 
         # Pass Loss_fn to train_valid (Remove epoch_grads from returned values if it's truly gone)
