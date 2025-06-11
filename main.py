@@ -2,6 +2,7 @@ import scipy.io as sio
 import torch.optim as optim
 from utils import load_data
 import os
+from Model_magnet.encoding_loss_function import UnifiedLoss
 from torch.utils.tensorboard import SummaryWriter
 from Model_magnet.Magnet_model_2 import ChebNet as ChebNet_Original
 from Model_magnet.Magnet_model_multi_head_attention import ChebNet as ChebNet_MultiHead
@@ -52,7 +53,7 @@ def main(args):
         else:
             raise ValueError("number of specified classes should be 2 or 9")
 
-        label_repeat = load_data.load_srt_de(feature_pdc, False, label_type, num_windows)
+        label_repeat = load_data.load_srt_de(feature_pdc, True, label_type, num_windows)
 
         start_index = (args.n_subs // args.n_folds) * fold
         end_index = (args.n_subs // args.n_folds) * (fold + 1)
@@ -107,16 +108,15 @@ def main(args):
         optimizer = optim.Adam(
             list(model.parameters()) + list(Loss_fn.parameters()),
             lr=args.learning_rate,
-            weight_decay=args.l2_normalization # Add this line
+            weight_decay=args.l2_normalization
         )
 
         writer = SummaryWriter(log_dir=f"runs/{exp}/num_classes_{args.num_classes}_{loss_type_arg}"
                                        f"_gmmLambda{args.gmm_lambda}_proto_dim_{args.proto_dim}"
-                                       f"_multi_head_{args.multi_head_attention}"
+                                       f"_multi_head_{args.multi_head_attention}_q_{args.q}"
                                        f"/fold_{fold}")
 
-        # Pass Loss_fn to train_valid (Remove epoch_grads from returned values if it's truly gone)
-        # met_epochs, conf_mat_epochs, epoch_grads = train_valid(model, optimizer, epochs=args.epochs,
+        # Pass Loss_fn to train_valid
         met_epochs, conf_mat_epochs = train_valid(model, optimizer, Loss_fn, epochs=args.epochs,
                                                                train_loader=train_loader,
                                                                valid_loader=valid_loader, writer=writer,

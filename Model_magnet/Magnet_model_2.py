@@ -5,6 +5,7 @@ import complextorch.nn as compnn
 import complextorch
 import torch.nn.functional as F
 from utils.myBatch import *
+from utils.myModReLU import *
 from utils.hermitian import *
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
@@ -33,7 +34,9 @@ class ChebConv(nn.Module):
         if self.use_attention:
             # self.attn_fc = nn.Linear(4 * in_c, 1)  # Concatenates real+imag features
             self.attn_fc = compnn.CVLinear(2 * in_c, 1, bias=bias)
-            self.cprelu = compnn.CPReLU()
+            # self.cprelu = compnn.CPReLU()
+            # self.cprelu = compnn.CVCardiod()
+            self.cprelu = modReLU(bias=-1e-5)
             # self.cprelu = nn.PReLU()
             self.psoftmax = compnn.PhaseSoftMax(dim=1)
             # self.psoftmax = nn.Softmax(dim=1)
