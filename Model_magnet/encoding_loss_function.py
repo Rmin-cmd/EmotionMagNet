@@ -33,7 +33,10 @@ class UnifiedLoss(nn.Module):
                 raise ValueError("dist_features must be positive for prototype loss.")
             self.dist_features = dist_features
             # Prototypes: shape (2, 5, dist_features, num_classes) - 5 is a hardcoded dimension
-            self.prototypes_param = nn.Parameter(torch.randn(2, 5, self.dist_features, self.num_classes))
+            if gmm_lambda > 0:
+                self.prototypes_param = nn.Parameter(torch.randn(2, 5, self.dist_features, self.num_classes))
+            else:
+                self.prototypes_param = nn.Parameter(torch.randn(2, 1, self.dist_features, self.num_classes))
             self.temp_param = nn.Parameter(torch.tensor(float(temperature)))
             self.log_sigma_param = nn.Parameter(torch.zeros(1, 5, self.num_classes))
             self.gmm_lambda = float(gmm_lambda)

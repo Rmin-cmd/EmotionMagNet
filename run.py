@@ -18,11 +18,11 @@ if __name__ == '__main__':
     parser.add_argument("--num_classes", type=int, default=9,
                         help="specify the number of classes in the dataset")
     parser.add_argument("--epochs", type=int, default=50, help="number of epochs")
-    parser.add_argument("--learning_rate", type=float, default=0.01,
+    parser.add_argument("--learning_rate", type=float, default=0.001,
                         help="learning rate of the specified model")
     parser.add_argument("--dropout", type=float, default=0.2, help="specify the dropout ratio")
-    parser.add_argument("--batch_size", default=64, help="batch size of the dataloader")
-    parser.add_argument("--q", default=0.01, help="magnetic q-value specification")
+    parser.add_argument("--batch_size", default=256, help="batch size of the dataloader")
+    parser.add_argument("--q", type=float, default=0.01, help="magnetic q-value specification")
     parser.add_argument("--l2_normalization", type=float, default=1e-5, # Changed default
                         help="apply l2 normalization to the optimization module (weight decay)")
     parser.add_argument("--proto_dim", type=int, default=128, help="dimension of the extracted prototypes")
