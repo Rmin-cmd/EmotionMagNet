@@ -2,6 +2,7 @@ import scipy.io as sio
 import torch.optim as optim
 from utils import load_data
 import os
+import torch.nn as nn
 from Model_magnet.encoding_loss_function import UnifiedLoss
 from torch.utils.tensorboard import SummaryWriter
 from Model_magnet.Magnet_model_2 import ChebNet as ChebNet_Original
@@ -74,11 +75,16 @@ def main(args):
         # Model selection
         if args.multi_head_attention:
             print(f"INFO: Using Multi-Head Attention GCN model for fold {fold}.")
-            model = ChebNet_MultiHead(in_c=args.in_channels, args=args).to(device)
+            model = ChebNet_MultiHead(in_c=args.in_channels, args=args)
         else:
-            model = ChebNet_Original(in_c=args.in_channels, args=args).to(device)
+            model = ChebNet_Original(in_c=args.in_channels, args=args)
 
-        # Instantiate UnifiedLoss here
+        if args.T4_2_flag:
+            model = nn.DataParallel(model, device_ids=[0, 1])
+
+        model = model.to(device)
+
+            # Instantiate UnifiedLoss here
         criterion_for_loss = torch.nn.CrossEntropyLoss() # Define criterion to be passed
         if not args.simple_magnet:
             loss_type_arg = 'label_encoding' if args.label_encoding else 'prototype'

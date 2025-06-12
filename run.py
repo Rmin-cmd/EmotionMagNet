@@ -6,6 +6,10 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser("Emotion Recognition Using Magnetic Graph Convolution")
 
+    # if T4 x2 Activated
+    parser.add_argument("--T4_2_flag", action="store_true", help="This flag activated when using the "
+                                                                 "T4 x2 GPU on Kaggle")
+
     # Data paths
     parser.add_argument("--data_path", default='./data/connectivity.mat',
                         help="Path to the connectivity data MAT file")
@@ -25,7 +29,7 @@ if __name__ == '__main__':
     parser.add_argument("--q", type=float, default=0.01, help="magnetic q-value specification")
     parser.add_argument("--l2_normalization", type=float, default=1e-5, # Changed default
                         help="apply l2 normalization to the optimization module (weight decay)")
-    parser.add_argument("--proto_dim", type=int, default=128, help="dimension of the extracted prototypes")
+    parser.add_argument("--proto_dim", type=int, default=16, help="dimension of the extracted prototypes")
     parser.add_argument("--K", default=3, help="Number of chebyshev polynomials")
     parser.add_argument("--num_filter", default=2, help="number of graph convolution layers")
     parser.add_argument("--distance_metric", default="L2",
