@@ -4,7 +4,7 @@
 
 EmotionMagNet is a research project focused on emotion recognition from physiological signals (e.g., EEG) using graph convolutional networks (GCNs). This repository explores the use of complex-valued GCNs, including concepts inspired by Magnetic Graph Networks, and incorporates advanced mechanisms like multi-head attention within graph convolutions and attention across different frequency band representations.
 
-The models aim to classify emotions based on features extracted from subjects and their functional connectivity (e.g., Phase Delay Constant - PDC) across different frequency bands.
+The models aim to classify emotions based on features extracted from subjects and their functional connectivity (e.g., Partial Directed Coherence - PDC) across different frequency bands.
 
 ## Features
 
