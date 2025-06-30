@@ -3,7 +3,7 @@ import torch.optim as optim
 from utils import load_data
 import os
 import torch.nn as nn
-from Model_magnet.encoding_loss_function import UnifiedLoss
+from Model_magnet.encoding_loss_function2 import UnifiedLoss
 from torch.utils.tensorboard import SummaryWriter
 from Model_magnet.Magnet_model_2 import ChebNet as ChebNet_Original
 from Model_magnet.Magnet_model_multi_head_attention import ChebNet as ChebNet_MultiHead

@@ -38,7 +38,8 @@ class UnifiedLoss(nn.Module):
             else:
                 self.prototypes_param = nn.Parameter(torch.randn(2, 1, self.dist_features, self.num_classes))
             self.temp_param = nn.Parameter(torch.tensor(float(temperature)))
-            self.log_sigma_param = nn.Parameter(torch.zeros(1, 5, self.num_classes))
+            self.log_sigma_param = nn.Parameter(torch.zeros(5, self.num_classes))
+            self.log_pi_param = nn.Parameter(torch.zeros(5, self.num_classes))
             self.gmm_lambda = float(gmm_lambda)
         elif self.loss_type == 'simple':
             pass
@@ -151,6 +152,70 @@ class UnifiedLoss(nn.Module):
 
             # GMM Regularization (simplified placeholder)
             loss_proto_gmm = torch.tensor(0.0, device=current_device)
+            # if self.gmm_lambda > 0:
+            #     # 1) squared diffs: δ[n,a,f,c] = |z[n,f] - μ[a,f,c]|^2
+            #     delta = (preds_complex
+            #          .unsqueeze(1)  # [B,1,F]
+            #          .unsqueeze(3)  # [B,1,F,1]
+            #          - prototypes_cv  # [1,A,F,C]
+            #          ).abs() ** 2  # => [B,A,F,C]
+            #
+            #     # 2) D2[n,a,c] = sum_f δ
+            #     D2 = delta.sum(dim=2)  # [B,A,C]
+            #
+            #     # 3) π[a,c] and σ[a,c]
+            #     log_pi = self.log_pi_param  # (A,C)
+            #     pi = torch.softmax(log_pi, dim=0)  # normalize over a
+            #     sigma = torch.exp(self.log_sigma_param)  # (A,C)
+            #     sigma2 = sigma ** 2 + 1e-8
+            #
+            #     # 4) log-prob L[n,a,c]
+            #     # L = -D2/(2σ²) + log π
+            #     L = -D2 / (2 * sigma2.unsqueeze(0)) + torch.log(pi).unsqueeze(0)
+            #
+            #     # 5) responsibilities r[n,a,c] = softmax over a
+            #     r = torch.softmax(L, dim=1)  # [B,A,C]
+            #
+            #     # 6) M-step: update means μ' and optional σ'
+            #     R = r.sum(dim=0).clamp(min=1e-6)  # [A,C]
+            #     # weighted sum W[a,f,c] = ∑_n r[n,a,c] * z[n,f]
+            #     W = torch.einsum('bac,bf->afc', r.to(preds_complex.dtype), preds_complex)  # [A,F,C]
+            #     mu_new = W / R.unsqueeze(1)  # [A,F,C]
+            #
+            #     # (optional) update sigma²
+            #     # σ2_new = (r * D2).sum(dim=0) / (F * R)
+            #
+            #     # 7) GMM loss: negative log-likelihood for true class
+            #     B, _, C = D2.shape
+            #     # gather L[n,:,y_n] then logsumexp over a
+            #     labels = labels_long
+            #     L_true = L[torch.arange(B), :, labels]  # [B,A]
+            #     nll = -torch.logsumexp(L_true, dim=1)  # [B]
+            #     loss_gmm = nll.mean()  # scalar
+            #
+            #     total_loss = class_loss + self.gmm_lambda * loss_gmm
+            #     # mu_new: ComplexFloat tensor of shape [A, F, C]
+            #
+            #     # 1) extract real and imag parts
+            #     mu_real = mu_new.real  # shape [A, F, C], dtype=float
+            #     mu_imag = mu_new.imag  # shape [A, F, C], dtype=float
+            #
+            #     # 2) copy into your two prototype parameters
+            #     with torch.no_grad():
+            #         self.prototypes_param[0].copy_(mu_real)  # real channel
+            #         self.prototypes_param[1].copy_(mu_imag)  # imag channel
+            #
+            #
+            #     # # update prototypes & pi params as buffers (no grad)
+            #     # with torch.no_grad():
+            #     #     self.prototypes_param.copy_(torch.view_as_real(mu_new))
+            #     #     self.log_pi_param.copy_(torch.log(pi))
+            #
+            #     # final predictions
+            #     probs = torch.softmax(logits.mean(dim=1), dim=1)
+            #     preds_labels = torch.argmax(probs, dim=1)
+            #
+            #     return total_loss, preds_labels
             if self.gmm_lambda > 0:
                 # Original GMM logic from loss_fucntion_2:
                 # preds_complex is (B, F)
@@ -165,7 +230,7 @@ class UnifiedLoss(nn.Module):
                 likelihoods_gmm = torch.exp(-distance2_gmm / (2 * sigma_gmm**2 + 1e-8))
 
                 # Normalize responsibilities per prototype set (over batch B)
-                responsibilities_gmm = likelihoods_gmm / (likelihoods_gmm.sum(dim=0, keepdim=True) + 1e-8)
+                responsibilities_gmm = likelihoods_gmm / (likelihoods_gmm.sum(dim=1, keepdim=True) + 1e-8)
 
                 # weighted_sum: (5, F, C)
                 # einsum: 'bac,bf->afc' (b=batch, a=num_models_5, c=classes, f=features)

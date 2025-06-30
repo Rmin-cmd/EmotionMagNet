@@ -89,11 +89,15 @@ def train_valid(model, optimizer, Loss, epochs, train_loader, valid_loader, writ
 
     best_f1, best_err, early_stopping, best_loss = 0, np.inf, 0, 0 # These seem like old/alternative early stopping vars, consider removing if redundant
 
+    lambda_max, warmup_epochs = args.gmm_lambda, 10
+
     for epoch in tqdm(range(epochs)):
 
         model.train()
 
         loss_train, train_correct = 0.0, 0.0
+
+        gmm_lambda = lambda_max * min(epoch / warmup_epochs, 1.0)
 
         for i, (graph, X_real, X_imag, label) in enumerate(train_loader):
             start_time = time.time()
@@ -106,13 +110,24 @@ def train_valid(model, optimizer, Loss, epochs, train_loader, valid_loader, writ
             preds = model(X_real, X_imag, graph)
 
             # Use UnifiedLoss instance
-            train_loss, pred_label = Loss(preds, label)
+            train_loss, pred_label = Loss(preds, label, gmm_lambda)
+
+            if epoch == 0 and i == 0:
+                perv_total_loss = train_loss
+
+            if train_loss.item() > perv_total_loss * 1.02:
+                gmm_lambda = max(gmm_lambda - gmm_lambda * 0.1, 0.0)
+
+            perv_total_loss = 0.9 * perv_total_loss + 0.1 * train_loss.item()
 
             loss_train += train_loss.detach().item()
             train_correct += (pred_label.squeeze() == label).sum().detach().item()
             optimizer.zero_grad()
             train_loss.backward()
             optimizer.step()
+        # print(model)
+        # current_b = model.cheb_conv1.cprelu.item()
+        # print(f"Epoch {epoch + 1:3d}/{epochs}: modReLU bias b = {current_b:.6f}")
 
         scheduler.step()
 
@@ -134,7 +149,7 @@ def train_valid(model, optimizer, Loss, epochs, train_loader, valid_loader, writ
                 preds = model(X_real, X_imag, graph)
 
                 # Use UnifiedLoss instance
-                valid_loss, pred_label = Loss(preds, label)
+                valid_loss, pred_label = Loss(preds, label, gmm_lambda)
 
                 loss_valid += valid_loss.detach().item()
                 pred_.append(pred_label) # Collect tensors

@@ -33,12 +33,13 @@ class ChebConv(nn.Module):
         # Attention parameters
         if self.use_attention:
             # self.attn_fc = nn.Linear(4 * in_c, 1)  # Concatenates real+imag features
+            # self.bn = ComplexBatchNorm2d(30)
             self.attn_fc = compnn.CVLinear(2 * in_c, 1, bias=bias)
             # self.cprelu = compnn.CPReLU()
             # self.cprelu = compnn.CVCardiod()
-            self.cprelu = modReLU(bias=-1e-5)
+            self.cprelu = LearnableModReLU()
             # self.cprelu = nn.PReLU()
-            self.psoftmax = compnn.PhaseSoftMax(dim=1)
+            self.psoftmax = compnn.CVSoftMax(dim=-1)
             # self.psoftmax = nn.Softmax(dim=1)
 
         if bias:
@@ -67,14 +68,21 @@ class ChebConv(nn.Module):
             # X = complextorch.CVTensor(X_i, X_j)
 
             # scores = self.attn_fc(X.complex).squeeze(-1)  # [B, N, N]
+            X = complextorch.CVTensor(r=X.real, i=X.imag)
+            # X = self.bn(X)
             scores = self.attn_fc(X).squeeze(-1)  # [B, N, N]
             # scores = self.attn_fc(concat).squeeze(-1)  # [B, N, N]
             scores = self.cprelu(scores)
             attn_weights = self.psoftmax(scores)
+            # attn_weights = self.PhaseSoftMax(scores)
             # scores = F.leaky_relu(scores)
             # attn_weights = F.softmax(scores, dim=-1)  # [B, N, N]
 
             laplacian = laplacian * attn_weights.unsqueeze(1)
+
+            # laplacian[:, 1] *= attn_weights.complex()
+            # for k_num in range(1, laplacian.shape[0]):
+            #     laplacian[:, k_num] = laplacian[:, k_num] * attn_weights.complex
             L_real = laplacian.real
             L_imag = laplacian.imag
 
@@ -136,6 +144,15 @@ class ChebConv(nn.Module):
             sum_LXW_imag += torch.matmul(LX_real_k, Wk_imag) + torch.matmul(LX_imag_k, Wk_real)
 
         return torch.stack([sum_LXW_real, sum_LXW_imag])
+
+    def PhaseSoftMax(self, z, eps=1e-6):
+        # z: (...)x n complex tensor
+        r = z.abs()  # magnitudes
+        phi = z.angle()  # phases
+        M = r.max(dim=-1, keepdim=True)[0]
+        exp_shift = torch.exp(r - M)  # stable exp
+        p = exp_shift / (exp_shift.sum(dim=-1, keepdim=True) + eps)
+        return p * torch.exp(1j * phi)
 
 
 class ChebNet(nn.Module):
