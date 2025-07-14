@@ -55,12 +55,37 @@ class UnifiedLoss(nn.Module):
                 preds_c = preds_c.squeeze(-1)
             preds_exp = preds_c.unsqueeze(1)  # [B,1,C]
             label_exp = _label_en.unsqueeze(0)  # [1,C]
+            # classification loss: distance to each prototype
             if self.distance_metric == 'L1':
-                d = torch.abs(preds_exp - label_exp)
-            else:  # L2
-                d = torch.sqrt((preds_exp.real - label_exp.real)**2 +
-                               (preds_exp.imag - label_exp.imag)**2 + 1e-8)
-            logits = -d.squeeze() / self.temperature
+                dists = torch.abs(preds_exp - label_exp)
+            elif self.distance_metric == 'L2':  # L2
+                dists = torch.sqrt(
+                    (preds_exp.unsqueeze(1).real - label_exp.unsqueeze(0).real) ** 2 +
+                    (preds_exp.unsqueeze(1).imag - label_exp.unsqueeze(0).imag) ** 2 + 1e-8
+                )  # [B,C,F]
+            elif self.distance_metric == 'orth':
+                pred_real_b = preds_exp.real
+                pred_imag_b = preds_exp.imag
+                proto_real_b = label_exp.real
+                proto_imag_b = label_exp.imag
+
+                P_numerator_b = torch.abs(pred_real_b * proto_imag_b - pred_imag_b * proto_real_b)
+                P_b = P_numerator_b / (preds_exp.abs() + 1e-8)
+
+                dot_product_b = pred_real_b * proto_real_b + pred_imag_b * proto_imag_b
+                aligned_mask_b = dot_product_b < 0
+
+                final_term_b = torch.zeros_like(P_b)
+                current_mag_preds_b = preds_exp.abs()
+
+                final_term_b[aligned_mask_b] = current_mag_preds_b.expand_as(P_b)[aligned_mask_b] + \
+                                               (current_mag_preds_b.expand_as(P_b)[aligned_mask_b] - P_b[
+                                                   aligned_mask_b])
+                final_term_b[~aligned_mask_b] = P_b[~aligned_mask_b]
+                dists = final_term_b + torch.abs(current_mag_preds_b - label_exp.abs())
+            else:
+                raise ValueError(f"Unknown distance_metric: {self.distance_metric} for prototype loss")
+            logits = -dists.squeeze() / self.temperature
             loss = self.criterion(logits, labels)
             probs = torch.softmax(logits, dim=1)
             preds_lbl = torch.argmax(probs, dim=1)

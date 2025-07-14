@@ -182,14 +182,16 @@ class ChebNet(nn.Module):
         # self.conv = compnn.CVConv1d(30 * last_dim, label_dim, kernel_size=1)
         # for the second loss function on class prototypes
         if args.label_encoding or args.simple_magnet:
+            self.lin = compnn.CVLinear(args.num_filter, 1)
             self.conv = compnn.CVConv1d(30 * last_dim, args.num_classes, kernel_size=1)
         else:
             print(type(args.proto_dim))
+            self.lin = compnn.CVLinear(args.num_filter, 1)
             self.conv = compnn.CVConv1d(30 * last_dim, args.proto_dim, kernel_size=1)
 
         #
         self.tanh = compnn.CVPolarTanh()
-        self.bn = ComplexBatchNorm1d(30)
+        # self.bn = ComplexBatchNorm1d(30)
 
     def complex_relu(self, real, img):
         mask = 1.0 * (real >= 0)
@@ -210,9 +212,11 @@ class ChebNet(nn.Module):
             real, imag = self.cheb_conv2((real, imag), cheb_graph)
             # real, imag = self.complex_relu(real, imag)
 
-        real, imag = torch.mean(real, dim=2), torch.mean(imag, dim=2)
+        # real, imag = torch.mean(real, dim=1), torch.mean(imag, dim=1)
+        # real, imag = torch.mean(real, dim=2), torch.mean(imag, dim=2)
 
         x = complextorch.CVTensor(real, imag).to(device)
+        x = self.lin(x).squeeze()
         # x = self.bn(x)
         x = self.tanh(x)
         x = self.conv(x[:, :, None])

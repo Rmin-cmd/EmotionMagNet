@@ -11,6 +11,7 @@ from train_utils.train_utils import *
 from tqdm import tqdm
 import numpy as np
 import torch
+from GCN_pyg import preprocess_pdc
 
 from datetime import datetime
 today_date = str(datetime.now())
@@ -40,6 +41,8 @@ def main(args):
         feature_pdc = sio.loadmat(data_dir)['de_lds']
 
         A_pdc = sio.loadmat(args.data_path)['data']
+
+        # A_pdc = preprocess_pdc(A_pdc, trials_per_subject=28 * 11).reshape(A_pdc.shape)
 
         if args.num_classes == 9:
             label_type = "cls9" # Or derive from data/args if it can change

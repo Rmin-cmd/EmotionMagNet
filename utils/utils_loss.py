@@ -6,26 +6,26 @@ import numpy as np
 
 
 class Metrics:
+    def __init__(self, num_class, device=None):
+        # default to same device as available tensors
+        self.device = device or torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-    def __init__(self, num_class):
-        device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-
-        self.accuracy = tcm.Accuracy(task='multiclass', num_classes=num_class).to(device)
-
-        self.recall = tcm.Recall(task='multiclass', num_classes=num_class, average='macro').to(device)
-
-        self.precision = tcm.Precision(task='multiclass', num_classes=num_class, average='macro').to(device)
-
-        self.F1_score = tcm.F1Score(task='multiclass', num_classes=num_class, average='macro').to(device)
+        self.accuracy  = tcm.Accuracy(task='multiclass', num_classes=num_class).to(self.device)
+        self.recall    = tcm.Recall(task='multiclass', num_classes=num_class, average='macro').to(self.device)
+        self.precision = tcm.Precision(task='multiclass', num_classes=num_class, average='macro').to(self.device)
+        self.f1_score  = tcm.F1Score(task='multiclass', num_classes=num_class, average='macro').to(self.device)
 
     def compute_metrics(self, preds, target):
+        # ensure inputs live on same device as the metrics
+        preds   = preds.to(self.device)
+        target  = target.to(self.device)
 
-        # _, preds = preds.max(-1)
-
-        # _, target = target.max(-1)
-
-        return [self.accuracy(preds, target).item(), self.recall(preds, target).item(),
-               self.precision(preds, target).item(), self.F1_score(preds, target).item()]
+        return [
+            self.accuracy(preds, target).item(),
+            self.recall(preds, target).item(),
+            self.precision(preds, target).item(),
+            self.f1_score(preds, target).item()
+        ]
 
 
 def label_cross_entropy(preds, labels):
