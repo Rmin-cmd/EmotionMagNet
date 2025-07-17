@@ -23,12 +23,12 @@ def dataloader(data_train, label_train, A_pdc_train, data_val, label_val,  A_pdc
     feature_imag_valid = torch.FloatTensor(np.imag(hilbert(data_val_reshaped, axis=-1))).to(device)
 
     dataset_pdc_train = TensorDataset(torch.from_numpy(A_pdc_train.reshape(-1, 5,
-                                                       A_pdc_train.shape[1], A_pdc_train.shape[2])).to(device),
+                                                       A_pdc_train.shape[4], A_pdc_train.shape[5])).to(device),
                                                        feature_real_train, feature_imag_train,
                                                        torch.from_numpy(label_train).to(device))
 
     dataset_pdc_valid = TensorDataset(torch.from_numpy(A_pdc_valid.reshape(-1, 5,
-                                                       A_pdc_valid.shape[1], A_pdc_valid.shape[2])).to(device),
+                                                       A_pdc_valid.shape[4], A_pdc_valid.shape[5])).to(device),
                                                        feature_real_valid, feature_imag_valid,
                                                        torch.from_numpy(label_val).to(device))
 
@@ -48,8 +48,13 @@ def train_test_split(train_sub, val_sub, feature_de, Adj, label_repeat):
     label_train = np.tile(label_repeat, len(train_sub))
     label_val = np.tile(label_repeat, len(val_sub))
 
-    A_pdc_train, A_pdc_valid = Adj[train_sub].reshape([-1, 30, 30]),\
-                               Adj[val_sub].reshape([-1, 30, 30])
+    # A_pdc_train, A_pdc_valid = Adj[train_sub].reshape([-1, 30, 30]),\
+    #                            Adj[val_sub].reshape([-1, 30, 30])
+
+    A_pdc_train, A_pdc_valid = Adj[train_sub], \
+                               Adj[val_sub]
+    A_pdc_train, A_pdc_valid = np.transpose(A_pdc_train, axes=[0, 2, 3, 1, 4, 5]),\
+                               np.transpose(A_pdc_valid, axes=[0, 2, 3, 1, 4, 5])
 
     return data_train, A_pdc_train, label_train, data_val, A_pdc_valid, label_val
 
@@ -67,20 +72,6 @@ def train_valid(model, optimizer, Loss, epochs, train_loader, valid_loader, writ
 
     scheduler = CosineAnnealingLR(optimizer, T_max=100, eta_min=0.01)
 
-    # # Instantiate UnifiedLoss - This is now done in main.py
-    # loss_type_arg = 'label_encoding' if args.label_encoding else 'prototype'
-    # num_classes = 9
-    # label_encoding_temperature = 1.0
-
-    # Loss_instance = UnifiedLoss( # Renamed to avoid conflict with passed Loss
-    #     loss_type=loss_type_arg,
-    #     num_classes=num_classes,
-    #     distance_metric=args.distance_metric,
-    #     dist_features=args.proto_dim,
-    #     temperature=label_encoding_temperature,
-    #     gmm_lambda=args.gmm_lambda,
-    #     criterion=criterion
-    # ).to(device)
 
     # Early stopping initialization
     best_val_metric = 0.0 if args.early_stopping_monitor != 'loss' else float('inf')

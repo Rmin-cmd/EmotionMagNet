@@ -54,6 +54,7 @@ class GCNBatch(nn.Module):
         super(GCNBatch, self).__init__()
         self.conv1 = BatchedGCNLayer(in_features, hidden_dim)
         self.conv2 = BatchedGCNLayer(hidden_dim, hidden_dim)
+        self.conv3 = BatchedGCNLayer(hidden_dim, 1)
         self.fc = nn.Conv1d(30, 9, kernel_size=1)
         self.dropout = dropout
 
@@ -65,9 +66,10 @@ class GCNBatch(nn.Module):
         # Second GCN layer + ReLU
         x = self.conv2(x, adj)
         x = F.relu(x)
+        x = self.conv3(x, adj)
         # Global mean pooling over nodes
-        graph_repr = x.mean(dim=2)           # [B, hidden]
-        out = self.fc(graph_repr.unsqueeze(2))            # [B, num_classes]
+        # graph_repr = x.mean(dim=2)           # [B, hidden]
+        out = self.fc(x)            # [B, num_classes]
         return out.squeeze()
 
 # Example usage with your data:

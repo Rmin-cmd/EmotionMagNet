@@ -158,7 +158,10 @@ class UnifiedLoss(nn.Module):
             return total_loss, preds_lbl
 
         elif self.loss_type == 'simple':
-            logits = preds.abs()
+            if preds.is_complex():
+                logits = preds.abs()
+            else:
+                logits = preds
             loss = self.criterion(logits, labels)
             probs = torch.softmax(logits, dim=1)
             preds_lbl = torch.argmax(probs, dim=1)

@@ -3,15 +3,19 @@ import torch.optim as optim
 from utils import load_data
 import os
 import torch.nn as nn
+# from Model_magnet.encoding_loss_function2 import UnifiedLoss
 from Model_magnet.encoding_loss_function2 import UnifiedLoss
 from torch.utils.tensorboard import SummaryWriter
 from Model_magnet.Magnet_model_2 import ChebNet as ChebNet_Original
+from Model_magnet.REAL_Cheb import ChebNetReal
+from Model_magnet.gcn_models import SAGENet, GCNNet, GINNet, APPNPNet, GATNet
 from Model_magnet.Magnet_model_multi_head_attention import ChebNet as ChebNet_MultiHead
 from train_utils.train_utils import *
 from tqdm import tqdm
 import numpy as np
 import torch
 from GCN_pyg import preprocess_pdc
+import random
 
 from datetime import datetime
 today_date = str(datetime.now())
@@ -21,6 +25,11 @@ today_date = today_date.replace(':', '_')
 exp = 'experiment_' + today_date
 
 def main(args):
+    seed = args.seed
+    os.environ['PYTHONHASHSEED'] = str(seed)
+    random.seed(seed)
+    np.random.seed(seed)
+    torch.cuda.manual_seed(seed)
 
     n_per = args.n_subs // args.n_folds
 
@@ -76,11 +85,25 @@ def main(args):
                                                 K=args.K, batch_size=args.batch_size)
 
         # Model selection
-        if args.multi_head_attention:
-            print(f"INFO: Using Multi-Head Attention GCN model for fold {fold}.")
-            model = ChebNet_MultiHead(in_c=args.in_channels, args=args)
+        if args.simple_gcn_model is None:
+            if args.multi_head_attention:
+                print(f"INFO: Using Multi-Head Attention GCN model for fold {fold}.")
+                model = ChebNet_MultiHead(in_c=args.in_channels, args=args)
+            else:
+                model = ChebNet_Original(in_c=args.in_channels, args=args)
         else:
-            model = ChebNet_Original(in_c=args.in_channels, args=args)
+            if args.simple_gcn_model == "GCN":
+                model = GCNNet(in_c=args.in_channels, args=args)
+            elif args.simple_gcn_model == "Cheb_real":
+                model = ChebNetReal(in_c=args.in_channels, args=args)
+            elif args.simple_gcn_model == "GIN":
+                model = GINNet(in_c=args.in_channels, args=args)
+            elif args.simple_gcn_model == "GAT":
+                model = GATNet(in_c=args.in_channels, args=args)
+            elif args.simple_gcn_model == "APPNP":
+                model = APPNPNet(in_c=args.in_channels, args=args)
+            elif args.simple_gcn_model == "SAGE":
+                model = SAGENet(in_c=args.in_channels, args=args)
 
         if args.T4_2_flag:
             model = nn.DataParallel(model, device_ids=[0, 1])
@@ -89,12 +112,12 @@ def main(args):
 
             # Instantiate UnifiedLoss here
         criterion_for_loss = torch.nn.CrossEntropyLoss() # Define criterion to be passed
-        if not args.simple_magnet:
-            loss_type_arg = 'label_encoding' if args.label_encoding else 'prototype'
-        else:
+        if args.simple_gcn_model is not None or args.simple_magnet:
             loss_type_arg = 'simple'
+        else:
+            loss_type_arg = 'label_encoding' if args.label_encoding else 'prototype'
 
-        label_encoding_temperature = 1.0
+        label_encoding_temperature = 0.5
 
         Loss_fn = UnifiedLoss(
             loss_type=loss_type_arg,

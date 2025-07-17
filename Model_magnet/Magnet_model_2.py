@@ -165,29 +165,34 @@ class ChebNet(nn.Module):
         """
         super(ChebNet, self).__init__()
 
-        args = kwargs['args']
+        self.args = kwargs['args']
 
-        self.K, self.q = args.K, args.q
+        self.K, self.q = self.args.K, self.args.q
 
-        self.label_encoding = args.label_encoding
+        self.label_encoding = self.args.label_encoding
 
-        self.cheb_conv1 = ChebConv(in_c=in_c, out_c=args.num_filter, K=self.K, use_attention=args.simple_attention)
+        self.cheb_conv1 = ChebConv(in_c=in_c, out_c=self.args.num_filter, K=self.K, use_attention=self.args.simple_attention)
 
-        self.cheb_conv2 = ChebConv(in_c=args.num_filter, out_c=args.num_filter, K=self.K,
-                                   use_attention=args.simple_attention)
+        self.cheb_conv2 = ChebConv(in_c=self.args.num_filter, out_c=self.args.num_filter, K=self.K,
+                                   use_attention=self.args.simple_attention)
 
         last_dim = 1
-        self.dropout = compnn.CVDropout(args.dropout)
+        self.dropout = compnn.CVDropout(self.args.dropout)
         # for the first loss function on label encoding
         # self.conv = compnn.CVConv1d(30 * last_dim, label_dim, kernel_size=1)
         # for the second loss function on class prototypes
-        if args.label_encoding or args.simple_magnet:
-            self.lin = compnn.CVLinear(args.num_filter, 1)
-            self.conv = compnn.CVConv1d(30 * last_dim, args.num_classes, kernel_size=1)
+        if self.args.label_encoding or self.args.simple_magnet:
+            self.lin = compnn.CVLinear(self.args.num_filter, 1)
+            if self.args.concat:
+                self.fc = nn.Conv1d(2 * 2, self.args.num_classes, kernel_size=1)
+            elif self.args.simple_magnet:
+                self.fc = compnn.CVConv1d(2 * last_dim, self.args.num_classes, kernel_size=1)
+            else:
+                self.fc = compnn.CVConv1d(30 * last_dim, self.args.num_classes, kernel_size=1)
         else:
-            print(type(args.proto_dim))
-            self.lin = compnn.CVLinear(args.num_filter, 1)
-            self.conv = compnn.CVConv1d(30 * last_dim, args.proto_dim, kernel_size=1)
+            print(type(self.args.proto_dim))
+            self.lin = compnn.CVLinear(self.args.num_filter, 1)
+            self.fc = compnn.CVConv1d(30 * last_dim, self.args.proto_dim, kernel_size=1)
 
         #
         self.tanh = compnn.CVPolarTanh()
@@ -207,19 +212,25 @@ class ChebNet(nn.Module):
         cheb_graph = torch.stack([cheb_poly(her_mat[i], self.K) for i in range(her_mat.shape[0])]).to(device)
 
         real, imag = self.cheb_conv1((real, imag), cheb_graph)
+
         # print("cheb Conv1:",self.cheb_conv1.weight_real.requires_grad_())
         for l in range(1,layer):
             real, imag = self.cheb_conv2((real, imag), cheb_graph)
             # real, imag = self.complex_relu(real, imag)
 
-        # real, imag = torch.mean(real, dim=1), torch.mean(imag, dim=1)
+        if self.args.simple_magnet:
+            real, imag = torch.mean(real, dim=1), torch.mean(imag, dim=1)
         # real, imag = torch.mean(real, dim=2), torch.mean(imag, dim=2)
-
-        x = complextorch.CVTensor(real, imag).to(device)
-        x = self.lin(x).squeeze()
+        else:
+            x = complextorch.CVTensor(real, imag).to(device)
+            x = self.lin(x).squeeze()
         # x = self.bn(x)
-        x = self.tanh(x)
-        x = self.conv(x[:, :, None])
+        if self.args.concat:
+            x = torch.cat((real, imag), dim=-1)
+            x = self.fc(x[:, :, None])
+        else:
+            x = self.tanh(x)
+            x = self.fc(x[:, :, None])
         # for the first loss function label encoding
         # if self.label_encoding:
         return x.squeeze(2)
