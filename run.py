@@ -16,6 +16,7 @@ if __name__ == '__main__':
                         help="Root directory for feature data")
 
     # hyperparameters
+    parser.add_argument("--seed", default=0, help="Random SEED setup")
     parser.add_argument("--n_subs", default=123, help="number of subjects in the dataset")
     parser.add_argument("--n_folds", default=10, help="specify the number of folds")
     parser.add_argument("--num_classes", type=int, default=9,
@@ -50,10 +51,13 @@ if __name__ == '__main__':
                         help="encode labels on the 2-d plane of the valence-arousal")
     parser.add_argument("--simple_attention", action="store_true",
                         help="a simple attention applied on the features")
+    parser.add_argument("--concat", action="store_true", help="concatenate real and imaginary parts")
+    parser.add_argument("magnitude_phase", action="store_true", help="separately optimize magnitude and phase")
     parser.add_argument("--multi_head_attention", action="store_true",
                         help="apply an attention mechanism on the specified model")
     parser.add_argument("--GMM", action="store_true",
                         help="whenever prototype selection specified for the mentioned prototypes")
+    parser.add_argument("--simple_gcn_model", default=None, help="Apply a simple GCN model")
 
     args = parser.parse_args()
 
