@@ -7,6 +7,7 @@ from sklearn.metrics import confusion_matrix
 from scipy.signal import hilbert
 import numpy as np
 import torch
+import os
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
@@ -204,6 +205,7 @@ def train_valid(model, optimizer, Loss, epochs, train_loader, valid_loader, writ
                     epochs_no_improve = 0
                     # if best_model_state is not None: best_model_state = model.state_dict() # Save best model
                     print(f"EarlyStopping: New best {args.early_stopping_monitor}: {best_val_metric:.4f}")
+                    torch.save(model.state_dict(), os.path.join(args.save_dir, f'model_fold_{kwargs["fold"]}.pth'))
                 else:
                     epochs_no_improve += 1
                     print(f"EarlyStopping: No improvement in {args.early_stopping_monitor} for {epochs_no_improve} epoch(s). Best: {best_val_metric:.4f}, Current: {current_val_metric_for_early_stopping:.4f}")
@@ -213,6 +215,7 @@ def train_valid(model, optimizer, Loss, epochs, train_loader, valid_loader, writ
                     epochs_no_improve = 0
                     # if best_model_state is not None: best_model_state = model.state_dict() # Save best model
                     print(f"EarlyStopping: New best validation {args.early_stopping_monitor}: {best_val_metric:.4f}")
+                    torch.save(model.state_dict(), os.path.join(args.save_dir, f'model_fold_{kwargs["fold"]}.pth'))
                 else:
                     epochs_no_improve += 1
                     print(f"EarlyStopping: No improvement in validation {args.early_stopping_monitor} for {epochs_no_improve} epoch(s). Best: {best_val_metric:.4f}, Current: {current_val_metric_for_early_stopping:.4f}")

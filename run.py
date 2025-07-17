@@ -55,6 +55,8 @@ if __name__ == '__main__':
     parser.add_argument("--GMM", action="store_true",
                         help="whenever prototype selection specified for the mentioned prototypes")
 
+    parser.add_argument('--seed', type=int, default=42, help='random seed')
+
     args = parser.parse_args()
 
     main(args)
