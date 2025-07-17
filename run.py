@@ -59,6 +59,8 @@ if __name__ == '__main__':
                         help="whenever prototype selection specified for the mentioned prototypes")
     parser.add_argument("--simple_gcn_model", default=None, help="Apply a simple GCN model")
 
+    parser.add_argument('--seed', type=int, default=42, help='random seed')
+
     args = parser.parse_args()
 
     main(args)

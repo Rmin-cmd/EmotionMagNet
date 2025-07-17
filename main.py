@@ -7,7 +7,7 @@ import torch.nn as nn
 from Model_magnet.encoding_loss_function2 import UnifiedLoss
 from torch.utils.tensorboard import SummaryWriter
 from Model_magnet.Magnet_model_2 import ChebNet as ChebNet_Original
-from Model_magnet.REAL_Cheb import ChebNetReal
+# from Model_magnet.REAL_Cheb import ChebNetReal
 from Model_magnet.gcn_models import SAGENet, GCNNet, GINNet, APPNPNet, GATNet
 from Model_magnet.Magnet_model_multi_head_attention import ChebNet as ChebNet_MultiHead
 from train_utils.train_utils import *
@@ -25,6 +25,8 @@ today_date = today_date.replace(':', '_')
 exp = 'experiment_' + today_date
 
 def main(args):
+    args.save_dir = 'saved_models'
+    os.makedirs(args.save_dir, exist_ok=True)
     seed = args.seed
     os.environ['PYTHONHASHSEED'] = str(seed)
     random.seed(seed)
@@ -94,8 +96,8 @@ def main(args):
         else:
             if args.simple_gcn_model == "GCN":
                 model = GCNNet(in_c=args.in_channels, args=args)
-            elif args.simple_gcn_model == "Cheb_real":
-                model = ChebNetReal(in_c=args.in_channels, args=args)
+            # elif args.simple_gcn_model == "Cheb_real":
+            #     model = ChebNetReal(in_c=args.in_channels, args=args)
             elif args.simple_gcn_model == "GIN":
                 model = GINNet(in_c=args.in_channels, args=args)
             elif args.simple_gcn_model == "GAT":
@@ -152,7 +154,7 @@ def main(args):
         met_epochs, conf_mat_epochs = train_valid(model, optimizer, Loss_fn, epochs=args.epochs,
                                                                train_loader=train_loader,
                                                                valid_loader=valid_loader, writer=writer,
-                                                               args=args)
+                                                               args=args, fold=fold)
 
         fig = show_confusion(np.mean(conf_mat_epochs, axis=0), class_names, show=False)
 
