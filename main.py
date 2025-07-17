@@ -7,7 +7,7 @@ import torch.nn as nn
 from Model_magnet.encoding_loss_function2 import UnifiedLoss
 from torch.utils.tensorboard import SummaryWriter
 from Model_magnet.Magnet_model_2 import ChebNet as ChebNet_Original
-# from Model_magnet.REAL_Cheb import ChebNetReal
+from Model_magnet.REAL_Cheb import ChebNetReal
 from Model_magnet.gcn_models import SAGENet, GCNNet, GINNet, APPNPNet, GATNet
 from Model_magnet.Magnet_model_multi_head_attention import ChebNet as ChebNet_MultiHead
 from train_utils.train_utils import *
@@ -96,8 +96,8 @@ def main(args):
         else:
             if args.simple_gcn_model == "GCN":
                 model = GCNNet(in_c=args.in_channels, args=args)
-            # elif args.simple_gcn_model == "Cheb_real":
-            #     model = ChebNetReal(in_c=args.in_channels, args=args)
+            elif args.simple_gcn_model == "Cheb_real":
+                model = ChebNetReal(in_c=args.in_channels, args=args)
             elif args.simple_gcn_model == "GIN":
                 model = GINNet(in_c=args.in_channels, args=args)
             elif args.simple_gcn_model == "GAT":
