@@ -16,7 +16,7 @@ if __name__ == '__main__':
                         help="Root directory for feature data")
 
     # hyperparameters
-    parser.add_argument("--seed", default=0, help="Random SEED setup")
+    # parser.add_argument("--seed", default=0, help="Random SEED setup")
     parser.add_argument("--n_subs", default=123, help="number of subjects in the dataset")
     parser.add_argument("--n_folds", default=10, help="specify the number of folds")
     parser.add_argument("--num_classes", type=int, default=9,
@@ -58,12 +58,15 @@ if __name__ == '__main__':
     parser.add_argument("--GMM", action="store_true",
                         help="whenever prototype selection specified for the mentioned prototypes")
     parser.add_argument("--simple_gcn_model", default=None, help="Apply a simple GCN model")
+    parser.add_argument("--simple_dir_model", default=None, help="Apply a simple DirGCN model")
 
-    parser.add_argument('--seed', type=int, default=42, help='random seed')
+    parser.add_argument('--seed', type=int, default=0, help='random seed')
 
     args = parser.parse_args()
-
+    # if args.train:
     main(args)
+    # else:
+
 
 
 

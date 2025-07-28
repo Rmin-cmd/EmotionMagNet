@@ -186,8 +186,8 @@ class ChebNet(nn.Module):
             if self.args.concat:
                 self.fc = nn.Conv1d(2 * 2, self.args.num_classes, kernel_size=1)
             elif self.args.simple_magnet:
-                self.fc = compnn.CVConv1d(2 * last_dim, self.args.num_classes, kernel_size=1)
-            else:
+                # self.fc = compnn.CVConv1d(2 * last_dim, self.args.num_classes, kernel_size=1, bias=False)
+            # else:
                 self.fc = compnn.CVConv1d(30 * last_dim, self.args.num_classes, kernel_size=1)
         else:
             print(type(self.args.proto_dim))
@@ -218,7 +218,7 @@ class ChebNet(nn.Module):
             real, imag = self.cheb_conv2((real, imag), cheb_graph)
             # real, imag = self.complex_relu(real, imag)
 
-        if self.args.simple_magnet:
+        if self.args.concat:
             real, imag = torch.mean(real, dim=1), torch.mean(imag, dim=1)
         # real, imag = torch.mean(real, dim=2), torch.mean(imag, dim=2)
         else:

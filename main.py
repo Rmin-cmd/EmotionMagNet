@@ -16,6 +16,7 @@ import numpy as np
 import torch
 from GCN_pyg import preprocess_pdc
 import random
+from Model_magnet.dirgcn_models import *
 
 from datetime import datetime
 today_date = str(datetime.now())
@@ -87,13 +88,13 @@ def main(args):
                                                 K=args.K, batch_size=args.batch_size)
 
         # Model selection
-        if args.simple_gcn_model is None:
+        if args.simple_gcn_model is None and args.simple_dir_model is None:
             if args.multi_head_attention:
                 print(f"INFO: Using Multi-Head Attention GCN model for fold {fold}.")
                 model = ChebNet_MultiHead(in_c=args.in_channels, args=args)
             else:
                 model = ChebNet_Original(in_c=args.in_channels, args=args)
-        else:
+        elif args.simple_gcn_model:
             if args.simple_gcn_model == "GCN":
                 model = GCNNet(in_c=args.in_channels, args=args)
             elif args.simple_gcn_model == "Cheb_real":
@@ -106,6 +107,11 @@ def main(args):
                 model = APPNPNet(in_c=args.in_channels, args=args)
             elif args.simple_gcn_model == "SAGE":
                 model = SAGENet(in_c=args.in_channels, args=args)
+        elif args.simple_dir_model:
+            if args.simple_dir_model == "DiGCN":
+                model = DiGCNNet(in_c=args.in_channels, args=args)
+            elif args.simple_dir_model == "DGCNN":
+                model = DGCNNet(in_c=args.in_channels, args=args)
 
         if args.T4_2_flag:
             model = nn.DataParallel(model, device_ids=[0, 1])
@@ -114,12 +120,12 @@ def main(args):
 
             # Instantiate UnifiedLoss here
         criterion_for_loss = torch.nn.CrossEntropyLoss() # Define criterion to be passed
-        if args.simple_gcn_model is not None or args.simple_magnet:
+        if args.simple_gcn_model is not None or args.simple_magnet or args.simple_dir_model is not None:
             loss_type_arg = 'simple'
         else:
             loss_type_arg = 'label_encoding' if args.label_encoding else 'prototype'
 
-        label_encoding_temperature = 0.5
+        label_encoding_temperature = 1.0
 
         Loss_fn = UnifiedLoss(
             loss_type=loss_type_arg,
@@ -133,10 +139,10 @@ def main(args):
 
         # Print number of trainable parameters for model and loss
         model_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
-        loss_params = sum(p.numel() for p in Loss_fn.parameters() if p.requires_grad)
+        # loss_params = sum(p.numel() for p in Loss_fn.parameters() if p.requires_grad)
         print(f"Number of trainable model parameters: {model_params}")
-        print(f"Number of trainable loss parameters: {loss_params}")
-        print(f"Total trainable parameters: {model_params + loss_params}")
+        # print(f"Number of trainable loss parameters: {loss_params}")
+        # print(f"Total trainable parameters: {model_params + loss_params}")
 
 
         optimizer = optim.Adam(
