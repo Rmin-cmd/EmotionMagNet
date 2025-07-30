@@ -442,8 +442,9 @@ def matfile_loader(data_path, vid_ord, expected_video_counts_by_emotion, num_wor
 
 # --- Main execution block ---
 if __name__ == '__main__':
-    path_root = r'D:\proposal and thesis\Emotion recognition dataset\FACED dataset\Clisa_data\PDC_connectivity_30_mod'
-    out_path = r'preprocessed_data\preprocessed_connectivity\processed_conn_30_mod_3.mat'
+    # path_root = r'D:\proposal and thesis\Emotion recognition dataset\FACED dataset\Clisa_data\PDC_connectivity_30_mod'
+    path_root = os.path.join(os.getcwd(), 'PDC_connectivity_30_mod')
+    out_path = os.path.join(os.getcwd(), 'PDC_connectivity_30_mod.mat')
 
     vid_order = ['Anger', 'Disgust', 'Fear', 'Sadness', 'Neutral', 'Amusement', 'Inspiration', 'Joy', 'Tenderness']
 
