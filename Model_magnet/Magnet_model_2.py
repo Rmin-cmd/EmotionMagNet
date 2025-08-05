@@ -196,7 +196,7 @@ class ChebNet(nn.Module):
 
         #
         self.tanh = compnn.CVPolarTanh()
-        # self.bn = ComplexBatchNorm1d(30)
+        self.bn = ComplexBatchNorm1d(30)
 
     def complex_relu(self, real, img):
         mask = 1.0 * (real >= 0)
@@ -229,6 +229,7 @@ class ChebNet(nn.Module):
             x = torch.cat((real, imag), dim=-1)
             x = self.fc(x[:, :, None])
         else:
+            x = self.bn(x)
             x = self.tanh(x)
             x = self.fc(x[:, :, None])
         # for the first loss function label encoding

@@ -10,6 +10,8 @@ if __name__ == '__main__':
                                                                  "T4 x2 GPU on Kaggle")
 
     # Data paths
+    # parser.add_argument("--data_path", default='./data/omst_processed_conn_30_mod_4_2.mat',
+    #                     help="Path to the connectivity data MAT file")
     parser.add_argument("--data_path", default='./data/connectivity.mat',
                         help="Path to the connectivity data MAT file")
     parser.add_argument("--feature_root_dir", default='./data/features',

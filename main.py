@@ -53,6 +53,7 @@ def main(args):
         feature_pdc = sio.loadmat(data_dir)['de_lds']
 
         A_pdc = sio.loadmat(args.data_path)['data']
+        # A_pdc = sio.loadmat(args.data_path)['omst_data']
 
         # A_pdc = preprocess_pdc(A_pdc, trials_per_subject=28 * 11).reshape(A_pdc.shape)
 
@@ -139,10 +140,10 @@ def main(args):
 
         # Print number of trainable parameters for model and loss
         model_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
-        # loss_params = sum(p.numel() for p in Loss_fn.parameters() if p.requires_grad)
+        loss_params = sum(p.numel() for p in Loss_fn.parameters() if p.requires_grad)
         print(f"Number of trainable model parameters: {model_params}")
-        # print(f"Number of trainable loss parameters: {loss_params}")
-        # print(f"Total trainable parameters: {model_params + loss_params}")
+        print(f"Number of trainable loss parameters: {loss_params}")
+        print(f"Total trainable parameters: {model_params + loss_params}")
 
 
         optimizer = optim.Adam(
