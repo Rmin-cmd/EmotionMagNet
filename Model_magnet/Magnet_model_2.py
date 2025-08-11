@@ -204,7 +204,18 @@ class ChebNet(nn.Module):
 
     def forward(self, real, imag, graph, layer=2):
 
-        graph = torch.mean(graph, dim=1)
+        if self.args.Brain_frequency == "delta":
+            graph = graph[:, 0]
+        elif self.args.Brain_frequency == "theta":
+            graph = graph[:, 1]
+        elif self.args.Brain_frequency == "alpha":
+            graph = graph[:, 2]
+        elif self.args.Brain_frequency == "beta":
+            graph = graph[:, 3]
+        elif self.args.Brain_frequency == "gamma":
+            graph = graph[:, 4]
+        elif self.args.Brain_frequency == "average":
+            graph = torch.mean(graph, dim=1)
 
         her_mat = torch.stack([decomp(data, self.q, norm=True, laplacian=True, max_eigen=2, gcn_appr=True)
                             for data in graph])

@@ -1,83 +1,83 @@
-# # import numpy as np
-# # import torch
-# # import torch.nn as nn
-# # import scipy.io as sio
-# # import os
-# # from glob import glob
-# # import re
-# # from tqdm import tqdm
+import numpy as np
+import torch
+import torch.nn as nn
+import scipy.io as sio
+import os
+from glob import glob
+import re
+from tqdm import tqdm
+
+
+def read_mat_file(mat_path):
+
+    if mat_path.endswith('.mat'):
+
+        arr = sio.loadmat(mat_path)['DTF']['matrix'][0][0]
+
+        arr_norm = np.mean(arr, axis=2)
+        #
+        # arr_norm /= np.max(arr_norm, axis=0)
+
+        np.fill_diagonal(arr_norm, 0)
+
+    return arr_norm
+
+
+def str_num(str):
+    number = re.search(r'\d+', str)
+    return int(number.group())
+
+
+def matfile_loader(data_path, vid_ord):
+
+    data_out = []
+
+    for vid in tqdm(vid_ord):
+
+        paths = sorted(glob(os.path.join(data_path, vid) + '\*'))
+
+        freq_sub_data = []
+
+        for path in tqdm(paths):
+
+            path_ = sorted(glob(path + '\*'))
+
+            subs = np.unique([os.path.basename(path)[:6] for path in path_])
+
+            sub_data = []
+
+            for sub in tqdm(subs):
+
+                specified_ = [sub in path for path in path_]
+
+                specified_paths = [item for item, flag in zip(path_, specified_) if flag]
+
+                unique_vids = np.unique([str_num(os.path.basename(path_sp)[7:9]) for path_sp in specified_paths]).tolist()
+
+                data_sub = np.array([read_mat_file(path_data) for path_data in specified_paths])
+
+                sub_data.append(data_sub.reshape([len(unique_vids), data_sub.shape[0] // len(unique_vids),
+                                                  data_sub.shape[1], data_sub.shape[2]]))
+
+            freq_sub_data.append(sub_data)
+
+        data_out.append(np.array(freq_sub_data).swapaxes(1, 0))
+
+    return np.concatenate(data_out, axis=2)
+
+
+# path_root = 'D:\proposal and thesis\Emotion recognition dataset\FACED dataset\Clisa_data\PDC_connectivity_30'
+path_root = 'D:\proposal and thesis\Emotion recognition dataset\FACED dataset\Clisa_data\PDC_connectivity_30_mod'
+
+out_path = 'preprocessed_data\preprocessed_connectivity\processed_conn_30_mod.mat'
+
+vid_order = ['Anger', 'Disgust', 'Fear', 'Sadness', 'Neutral', 'Amusement', 'Inspiration', 'Joy', 'Tenderness']
+
+out = matfile_loader(data_path=path_root, vid_ord=vid_order)
+
+dic = {'data':out, 'label':'FACED_PDC'}
 # #
-# #
-# # def read_mat_file(mat_path):
-# #
-# #     if mat_path.endswith('.mat'):
-# #
-# #         arr = sio.loadmat(mat_path)['DTF']['matrix'][0][0]
-# #
-# #         arr_norm = np.mean(arr, axis=2)
-# #         #
-# #         arr_norm /= np.max(arr_norm, axis=0)
-# #
-# #         np.fill_diagonal(arr_norm, 0)
-# #
-# #     return arr_norm
-# #
-# #
-# # def str_num(str):
-# #     number = re.search(r'\d+', str)
-# #     return int(number.group())
-# #
-# #
-# # def matfile_loader(data_path, vid_ord):
-# #
-# #     data_out = []
-# #
-# #     for vid in tqdm(vid_ord):
-# #
-# #         paths = sorted(glob(os.path.join(data_path, vid) + '\*'))
-# #
-# #         freq_sub_data = []
-# #
-# #         for path in paths:
-# #
-# #             path_ = sorted(glob(path + '\*'))
-# #
-# #             subs = np.unique([os.path.basename(path)[:6] for path in path_])
-# #
-# #             sub_data = []
-# #
-# #             for sub in subs:
-# #
-# #                 specified_ = [sub in path for path in path_]
-# #
-# #                 specified_paths = [item for item, flag in zip(path_, specified_) if flag]
-# #
-# #                 unique_vids = np.unique([str_num(os.path.basename(path_sp)[7:9]) for path_sp in specified_paths]).tolist()
-# #
-# #                 data_sub = np.array([read_mat_file(path_data) for path_data in specified_paths])
-# #
-# #                 sub_data.append(data_sub.reshape([len(unique_vids), data_sub.shape[0] // len(unique_vids),
-# #                                                   data_sub.shape[1], data_sub.shape[2]]))
-# #
-# #             freq_sub_data.append(sub_data)
-# #
-# #         data_out.append(np.array(freq_sub_data).swapaxes(1, 0))
-# #
-# #     return np.concatenate(data_out, axis=2)
-# #
-# #
-# # # path_root = 'D:\proposal and thesis\Emotion recognition dataset\FACED dataset\Clisa_data\PDC_connectivity_30'
-# # path_root = 'D:\proposal and thesis\Emotion recognition dataset\FACED dataset\Clisa_data\PDC_connectivity_30_mod'
-# #
-# # out_path = 'preprocessed_data\preprocessed_connectivity\processed_conn_30_mod_3.mat'
-# #
-# # vid_order = ['Anger', 'Disgust', 'Fear', 'Sadness', 'Neutral', 'Amusement', 'Inspiration', 'Joy', 'Tenderness']
-# #
-# # out = matfile_loader(data_path=path_root, vid_ord=vid_order)
-# #
-# # dic = {'data':out, 'label':'FACED_PDC'}
-# #
-# # sio.savemat(out_path, dic)
+sio.savemat(out_path, dic)
 # # import numpy as np
 # # import torch
 # # import torch.nn as nn
@@ -317,165 +317,165 @@
 
 # main_processing.py
 
-import numpy as np
-import scipy.io as sio
-import os
-from glob import glob
-from tqdm import tqdm
-from concurrent.futures import ProcessPoolExecutor, as_completed
-
-# Import functions and global constants from the new processing_utils.py file
-from processing_utils import _process_subject_data, str_num, \
-    EXPECTED_C_DIM, EXPECTED_NUM_WINDOWS_PER_VIDEO, EXPECTED_NUM_FREQ_BANDS
-
-
-def matfile_loader(data_path, vid_ord, expected_video_counts_by_emotion, num_workers=None):  # Added new parameter
-    """
-    Loads and processes .mat files in parallel for different video orders and subjects.
-    """
-    data_out = []
-
-    if num_workers is None:
-        num_workers = os.cpu_count() or 1
-
-    with ProcessPoolExecutor(max_workers=num_workers) as executor:
-        for vid in tqdm(vid_ord, desc="Processing Video Orders"):
-
-            # Get the expected number of videos for the current emotion
-            expected_videos_for_current_emotion = expected_video_counts_by_emotion.get(vid)
-            if expected_videos_for_current_emotion is None:
-                raise ValueError(
-                    f"Emotion '{vid}' not found in expected_video_counts_by_emotion map. Please define its expected video count.")
-
-            paths = sorted(glob(os.path.join(data_path, vid) + os.sep + '*'))
-
-            processed_data_for_all_freq_bands = []
-
-            for path in tqdm(paths, desc=f"  Processing Freq/Sub Dirs for {vid}", leave=False):
-                path_ = sorted(glob(path + os.sep + '*'))
-
-                sub_paths_map = {}
-                for p in path_:
-                    sub_id = os.path.basename(p)[:6]
-                    if sub_id not in sub_paths_map:
-                        sub_paths_map[sub_id] = []
-                    sub_paths_map[sub_id].append(p)
-                sorted_subs = sorted(sub_paths_map.keys())
-
-                # Submit each subject's data processing to the executor
-                # Pass the expected_videos_for_current_emotion to the worker function
-                futures = {
-                    executor.submit(_process_subject_data, sub_paths, expected_videos_for_current_emotion): sub_id
-                    for sub_id, sub_paths in sub_paths_map.items()}
-
-                sub_data_results = [None] * len(sorted_subs)  # Pre-allocate list for ordered results
-
-                for future in tqdm(as_completed(futures), total=len(futures),
-                                   desc=f"    Processing Subjects for {os.path.basename(path)}", leave=False):
-                    sub_id = futures[future]
-                    try:
-                        result = future.result()
-                        if result is not None:
-                            original_index = sorted_subs.index(sub_id)
-                            sub_data_results[original_index] = result
-                    except Exception as exc:
-                        print(f"Error processing subject {sub_id} from {os.path.basename(path)}: {exc}")
-
-                valid_sub_data = [res for res in sub_data_results if res is not None]
-
-                if not valid_sub_data:
-                    # print(f"Warning: No valid subject data collected for freq band: {path}. Skipping.")
-                    continue
-
-                stacked_subjects_for_this_freq = np.array(valid_sub_data)
-                processed_data_for_all_freq_bands.append(stacked_subjects_for_this_freq)
-
-            if not processed_data_for_all_freq_bands:
-                print(f"Warning: No valid frequency band data processed for video order: {vid}. Skipping.")
-                continue
-
-            temp_stacked_by_freq = np.array(processed_data_for_all_freq_bands)
-
-            # --- ASSERTION 3: Check number of frequency bands ---
-            assert temp_stacked_by_freq.shape[0] == EXPECTED_NUM_FREQ_BANDS, \
-                f"Assertion Error: Video order '{vid}' has {temp_stacked_by_freq.shape[0]} frequency bands, expected {EXPECTED_NUM_FREQ_BANDS}."
-
-            final_stacked_for_vid = temp_stacked_by_freq.swapaxes(1, 0)
-
-            data_out.append(final_stacked_for_vid)
-
-    if not data_out:
-        print("Warning: No data generated for any video order. Returning empty array.")
-        return np.array([])
-
-    # --- ASSERTION 4: Check total number of video orders (emotions) ---
-    assert len(data_out) == len(vid_ord), \
-        f"Assertion Error: Expected {len(vid_ord)} video orders, but collected {len(data_out)}."
-
-    # Final concatenate: `data_out` contains elements of shape
-    # (num_subjects, EXPECTED_NUM_FREQ_BANDS, EXPECTED_NUM_VIDEOS_PER_SUBJECT, EXPECTED_NUM_WINDOWS_PER_VIDEO, EXPECTED_C_DIM, EXPECTED_C_DIM)
-    # The `EXPECTED_NUM_VIDEOS_PER_SUBJECT` here refers to the expected video count for the *specific emotion* for that item in `data_out`.
-    # For `np.concatenate(data_out, axis=2)` to work, the shapes must match on all axes *except* axis 2.
-    # This implies that `num_subjects`, `EXPECTED_NUM_FREQ_BANDS`, `EXPECTED_NUM_WINDOWS_PER_VIDEO`, `EXPECTED_C_DIM` must all be consistent across *all emotions*.
-    # The axis=2 (number of videos) will sum up.
-
-    if len(data_out) > 1:
-        # Check consistency for the final concatenation.
-        # This check is crucial because the video dimension is now variable per emotion.
-        # The common dimensions must be consistent for np.concatenate(axis=2)
-        first_item_shape = data_out[0].shape
-        for i, item in enumerate(data_out):
-            # Check all dimensions except the concatenation axis (axis=2)
-            # Dims: (num_subjects, num_freq_bands, NUM_VIDEOS_VARIES, num_windows, C1, C2)
-            if not (item.shape[0] == first_item_shape[0] and  # num_subjects
-                    item.shape[1] == first_item_shape[1] and  # num_freq_bands
-                    item.shape[3] == first_item_shape[3] and  # num_windows
-                    item.shape[4] == first_item_shape[4] and  # C1
-                    item.shape[5] == first_item_shape[5]):  # C2
-                print(f"Error: Inconsistent shapes in data_out for final concatenation. "
-                      f"Item {i} shape: {item.shape}, First item shape: {first_item_shape}. "
-                      f"Cannot concatenate along axis=2. Returning empty array.")
-                return np.array([])
-
-    return np.concatenate(data_out, axis=2)
-
-
-# --- Main execution block ---
-if __name__ == '__main__':
-    # path_root = r'D:\proposal and thesis\Emotion recognition dataset\FACED dataset\Clisa_data\PDC_connectivity_30_mod'
-    path_root = os.path.join(os.getcwd(), 'PDC_connectivity_30_mod')
-    out_path = os.path.join(os.getcwd(), 'PDC_connectivity_30_mod.mat')
-
-    vid_order = ['Anger', 'Disgust', 'Fear', 'Sadness', 'Neutral', 'Amusement', 'Inspiration', 'Joy', 'Tenderness']
-
-    # Define the expected video counts per emotion
-    EXPECTED_VIDEO_COUNTS_BY_EMOTION = {
-        'Anger': 3,
-        'Disgust': 3,
-        'Fear': 3,
-        'Sadness': 3,
-        'Neutral': 4,
-        'Amusement': 3,
-        'Inspiration': 3,
-        'Joy': 3,
-        'Tenderness': 3
-    }
-
-    # Ensure the output directory exists
-    os.makedirs(os.path.dirname(out_path), exist_ok=True)
-
-    print(f"Starting data loading and processing with dynamic video count assertions...")
-    try:
-        out = matfile_loader(data_path=path_root, vid_ord=vid_order,
-                             expected_video_counts_by_emotion=EXPECTED_VIDEO_COUNTS_BY_EMOTION, num_workers=4)
-
-        if out.size > 0:  # Check if the array is not empty
-            sio.savemat(out_path, {'data': out, 'label': 'FACED_PDC'})
-            print(f"Saved thresholded connectivity to {out_path}")
-        else:
-            print("No data was processed and saved due to warnings/errors.")
-    except AssertionError as e:
-        print(f"Preprocessing failed due to an assertion error: {e}")
-    except Exception as e:
-        print(f"An unexpected error occurred during preprocessing: {e}")
+# import numpy as np
+# import scipy.io as sio
+# import os
+# from glob import glob
+# from tqdm import tqdm
+# from concurrent.futures import ProcessPoolExecutor, as_completed
+#
+# # Import functions and global constants from the new processing_utils.py file
+# from processing_utils import _process_subject_data, str_num, \
+#     EXPECTED_C_DIM, EXPECTED_NUM_WINDOWS_PER_VIDEO, EXPECTED_NUM_FREQ_BANDS
+#
+#
+# def matfile_loader(data_path, vid_ord, expected_video_counts_by_emotion, num_workers=None):  # Added new parameter
+#     """
+#     Loads and processes .mat files in parallel for different video orders and subjects.
+#     """
+#     data_out = []
+#
+#     if num_workers is None:
+#         num_workers = os.cpu_count() or 1
+#
+#     with ProcessPoolExecutor(max_workers=num_workers) as executor:
+#         for vid in tqdm(vid_ord, desc="Processing Video Orders"):
+#
+#             # Get the expected number of videos for the current emotion
+#             expected_videos_for_current_emotion = expected_video_counts_by_emotion.get(vid)
+#             if expected_videos_for_current_emotion is None:
+#                 raise ValueError(
+#                     f"Emotion '{vid}' not found in expected_video_counts_by_emotion map. Please define its expected video count.")
+#
+#             paths = sorted(glob(os.path.join(data_path, vid) + os.sep + '*'))
+#
+#             processed_data_for_all_freq_bands = []
+#
+#             for path in tqdm(paths, desc=f"  Processing Freq/Sub Dirs for {vid}", leave=False):
+#                 path_ = sorted(glob(path + os.sep + '*'))
+#
+#                 sub_paths_map = {}
+#                 for p in path_:
+#                     sub_id = os.path.basename(p)[:6]
+#                     if sub_id not in sub_paths_map:
+#                         sub_paths_map[sub_id] = []
+#                     sub_paths_map[sub_id].append(p)
+#                 sorted_subs = sorted(sub_paths_map.keys())
+#
+#                 # Submit each subject's data processing to the executor
+#                 # Pass the expected_videos_for_current_emotion to the worker function
+#                 futures = {
+#                     executor.submit(_process_subject_data, sub_paths, expected_videos_for_current_emotion): sub_id
+#                     for sub_id, sub_paths in sub_paths_map.items()}
+#
+#                 sub_data_results = [None] * len(sorted_subs)  # Pre-allocate list for ordered results
+#
+#                 for future in tqdm(as_completed(futures), total=len(futures),
+#                                    desc=f"    Processing Subjects for {os.path.basename(path)}", leave=False):
+#                     sub_id = futures[future]
+#                     try:
+#                         result = future.result()
+#                         if result is not None:
+#                             original_index = sorted_subs.index(sub_id)
+#                             sub_data_results[original_index] = result
+#                     except Exception as exc:
+#                         print(f"Error processing subject {sub_id} from {os.path.basename(path)}: {exc}")
+#
+#                 valid_sub_data = [res for res in sub_data_results if res is not None]
+#
+#                 if not valid_sub_data:
+#                     # print(f"Warning: No valid subject data collected for freq band: {path}. Skipping.")
+#                     continue
+#
+#                 stacked_subjects_for_this_freq = np.array(valid_sub_data)
+#                 processed_data_for_all_freq_bands.append(stacked_subjects_for_this_freq)
+#
+#             if not processed_data_for_all_freq_bands:
+#                 print(f"Warning: No valid frequency band data processed for video order: {vid}. Skipping.")
+#                 continue
+#
+#             temp_stacked_by_freq = np.array(processed_data_for_all_freq_bands)
+#
+#             # --- ASSERTION 3: Check number of frequency bands ---
+#             assert temp_stacked_by_freq.shape[0] == EXPECTED_NUM_FREQ_BANDS, \
+#                 f"Assertion Error: Video order '{vid}' has {temp_stacked_by_freq.shape[0]} frequency bands, expected {EXPECTED_NUM_FREQ_BANDS}."
+#
+#             final_stacked_for_vid = temp_stacked_by_freq.swapaxes(1, 0)
+#
+#             data_out.append(final_stacked_for_vid)
+#
+#     if not data_out:
+#         print("Warning: No data generated for any video order. Returning empty array.")
+#         return np.array([])
+#
+#     # --- ASSERTION 4: Check total number of video orders (emotions) ---
+#     assert len(data_out) == len(vid_ord), \
+#         f"Assertion Error: Expected {len(vid_ord)} video orders, but collected {len(data_out)}."
+#
+#     # Final concatenate: `data_out` contains elements of shape
+#     # (num_subjects, EXPECTED_NUM_FREQ_BANDS, EXPECTED_NUM_VIDEOS_PER_SUBJECT, EXPECTED_NUM_WINDOWS_PER_VIDEO, EXPECTED_C_DIM, EXPECTED_C_DIM)
+#     # The `EXPECTED_NUM_VIDEOS_PER_SUBJECT` here refers to the expected video count for the *specific emotion* for that item in `data_out`.
+#     # For `np.concatenate(data_out, axis=2)` to work, the shapes must match on all axes *except* axis 2.
+#     # This implies that `num_subjects`, `EXPECTED_NUM_FREQ_BANDS`, `EXPECTED_NUM_WINDOWS_PER_VIDEO`, `EXPECTED_C_DIM` must all be consistent across *all emotions*.
+#     # The axis=2 (number of videos) will sum up.
+#
+#     if len(data_out) > 1:
+#         # Check consistency for the final concatenation.
+#         # This check is crucial because the video dimension is now variable per emotion.
+#         # The common dimensions must be consistent for np.concatenate(axis=2)
+#         first_item_shape = data_out[0].shape
+#         for i, item in enumerate(data_out):
+#             # Check all dimensions except the concatenation axis (axis=2)
+#             # Dims: (num_subjects, num_freq_bands, NUM_VIDEOS_VARIES, num_windows, C1, C2)
+#             if not (item.shape[0] == first_item_shape[0] and  # num_subjects
+#                     item.shape[1] == first_item_shape[1] and  # num_freq_bands
+#                     item.shape[3] == first_item_shape[3] and  # num_windows
+#                     item.shape[4] == first_item_shape[4] and  # C1
+#                     item.shape[5] == first_item_shape[5]):  # C2
+#                 print(f"Error: Inconsistent shapes in data_out for final concatenation. "
+#                       f"Item {i} shape: {item.shape}, First item shape: {first_item_shape}. "
+#                       f"Cannot concatenate along axis=2. Returning empty array.")
+#                 return np.array([])
+#
+#     return np.concatenate(data_out, axis=2)
+#
+#
+# # --- Main execution block ---
+# if __name__ == '__main__':
+#     # path_root = r'D:\proposal and thesis\Emotion recognition dataset\FACED dataset\Clisa_data\PDC_connectivity_30_mod'
+#     path_root = os.path.join(os.getcwd(), 'PDC_connectivity_30_mod')
+#     out_path = os.path.join(os.getcwd(), 'PDC_connectivity_30_mod.mat')
+#
+#     vid_order = ['Anger', 'Disgust', 'Fear', 'Sadness', 'Neutral', 'Amusement', 'Inspiration', 'Joy', 'Tenderness']
+#
+#     # Define the expected video counts per emotion
+#     EXPECTED_VIDEO_COUNTS_BY_EMOTION = {
+#         'Anger': 3,
+#         'Disgust': 3,
+#         'Fear': 3,
+#         'Sadness': 3,
+#         'Neutral': 4,
+#         'Amusement': 3,
+#         'Inspiration': 3,
+#         'Joy': 3,
+#         'Tenderness': 3
+#     }
+#
+#     # Ensure the output directory exists
+#     os.makedirs(os.path.dirname(out_path), exist_ok=True)
+#
+#     print(f"Starting data loading and processing with dynamic video count assertions...")
+#     try:
+#         out = matfile_loader(data_path=path_root, vid_ord=vid_order,
+#                              expected_video_counts_by_emotion=EXPECTED_VIDEO_COUNTS_BY_EMOTION, num_workers=4)
+#
+#         if out.size > 0:  # Check if the array is not empty
+#             sio.savemat(out_path, {'data': out, 'label': 'FACED_PDC'})
+#             print(f"Saved thresholded connectivity to {out_path}")
+#         else:
+#             print("No data was processed and saved due to warnings/errors.")
+#     except AssertionError as e:
+#         print(f"Preprocessing failed due to an assertion error: {e}")
+#     except Exception as e:
+#         print(f"An unexpected error occurred during preprocessing: {e}")
 

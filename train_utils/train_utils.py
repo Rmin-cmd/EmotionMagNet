@@ -102,7 +102,10 @@ def train_valid(model, optimizer, Loss, epochs, train_loader, valid_loader, writ
             preds = model(X_real, X_imag, graph)
 
             # Use UnifiedLoss instance
-            train_loss, pred_label = Loss(preds, label, gmm_lambda)
+            if args.multi_head_attention:
+                train_loss, pred_label, attention = Loss(preds, label)
+            else:
+                train_loss, pred_label = Loss(preds, label, gmm_lambda)
 
             if epoch == 0 and i == 0:
                 perv_total_loss = train_loss
@@ -141,7 +144,10 @@ def train_valid(model, optimizer, Loss, epochs, train_loader, valid_loader, writ
                 preds = model(X_real, X_imag, graph)
 
                 # Use UnifiedLoss instance
-                valid_loss, pred_label = Loss(preds, label, gmm_lambda)
+                if args.multi_head_attention:
+                    valid_loss, pred_label, attention = Loss(preds, label)
+                else:
+                    valid_loss, pred_label = Loss(preds, label, gmm_lambda)
 
                 loss_valid += valid_loss.detach().item()
                 pred_.append(pred_label) # Collect tensors

@@ -10,10 +10,10 @@ if __name__ == '__main__':
                                                                  "T4 x2 GPU on Kaggle")
 
     # Data paths
-    # parser.add_argument("--data_path", default='./data/omst_processed_conn_30_mod_4_2.mat',
-    #                     help="Path to the connectivity data MAT file")
-    parser.add_argument("--data_path", default='./data/connectivity.mat',
+    parser.add_argument("--data_path", default='./data/omst_processed_conn_30_mod_4_2.mat',
                         help="Path to the connectivity data MAT file")
+    # parser.add_argument("--data_path", default='./data/connectivity.mat',
+    #                     help="Path to the connectivity data MAT file")
     parser.add_argument("--feature_root_dir", default='./data/features',
                         help="Root directory for feature data")
 
@@ -46,6 +46,8 @@ if __name__ == '__main__':
     parser.add_argument("--early_stopping_monitor", type=str, default="f1_score", choices=["f1_score", "accuracy", "loss"], help="Metric to monitor for early stopping (f1_score, accuracy, or loss)")
 
     # Different Model types
+    parser.add_argument("--concat_heads_multi", action="store_false", help="concatenation or mean of the multi-head attention")
+    parser.add_argument("--Brain_frequency", default="average", help="specify the brain frequency for the model")
     parser.add_argument("--FFT-or-not", action='store_true',
                         help="imaginary part calculated from the fourier transform")
     parser.add_argument("--simple_magnet", action='store_true', help= "simple magnetic graph convolution")
