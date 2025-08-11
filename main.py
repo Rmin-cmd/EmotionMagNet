@@ -5,11 +5,12 @@ import os
 import torch.nn as nn
 # from Model_magnet.encoding_loss_function2 import UnifiedLoss
 from Model_magnet.encoding_loss_function2 import UnifiedLoss
+from Model_magnet.Cross_attention_loss import PrototypeAttentionLoss
 from torch.utils.tensorboard import SummaryWriter
 from Model_magnet.Magnet_model_2 import ChebNet as ChebNet_Original
 from Model_magnet.REAL_Cheb import ChebNetReal
 from Model_magnet.gcn_models import SAGENet, GCNNet, GINNet, APPNPNet, GATNet
-from Model_magnet.Magnet_model_multi_head_attention import ChebNet as ChebNet_MultiHead
+from Model_magnet.Magnet_model_multi_head_attention_2 import ChebNet as ChebNet_MultiHead
 from train_utils.train_utils import *
 from tqdm import tqdm
 import numpy as np
@@ -52,8 +53,8 @@ def main(args):
         data_dir = os.path.join(args.feature_root_dir, 'de_lds_fold%d.mat' % (fold))
         feature_pdc = sio.loadmat(data_dir)['de_lds']
 
-        A_pdc = sio.loadmat(args.data_path)['data']
-        # A_pdc = sio.loadmat(args.data_path)['omst_data']
+        # A_pdc = sio.loadmat(args.data_path)['data']
+        A_pdc = sio.loadmat(args.data_path)['omst_data']
 
         # A_pdc = preprocess_pdc(A_pdc, trials_per_subject=28 * 11).reshape(A_pdc.shape)
 
@@ -127,16 +128,25 @@ def main(args):
             loss_type_arg = 'label_encoding' if args.label_encoding else 'prototype'
 
         label_encoding_temperature = 1.0
-
-        Loss_fn = UnifiedLoss(
-            loss_type=loss_type_arg,
-            num_classes=args.num_classes,
-            distance_metric=args.distance_metric,
-            dist_features=args.proto_dim,
-            temperature=label_encoding_temperature,
-            gmm_lambda=args.gmm_lambda,
-            criterion=criterion_for_loss
-        ).to(device)
+        if args.multi_head_attention:
+            Loss_fn = PrototypeAttentionLoss(
+                num_classes=args.num_classes,
+                distance_metric=args.distance_metric,
+                dist_features=args.proto_dim,
+                temperature=label_encoding_temperature,
+                gmm_lambda=args.gmm_lambda,
+                criterion=criterion_for_loss
+            ).to(device)
+        else:
+            Loss_fn = UnifiedLoss(
+                loss_type=loss_type_arg,
+                num_classes=args.num_classes,
+                distance_metric=args.distance_metric,
+                dist_features=args.proto_dim,
+                temperature=label_encoding_temperature,
+                gmm_lambda=args.gmm_lambda,
+                criterion=criterion_for_loss
+            ).to(device)
 
         # Print number of trainable parameters for model and loss
         model_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
