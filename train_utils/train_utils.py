@@ -2,7 +2,7 @@ from torch.optim.lr_scheduler import CosineAnnealingLR
 from torch.utils.data import TensorDataset, DataLoader
 from tqdm import tqdm
 import time
-from utils.plots import save_attention_heatmaps
+from utils.plots import save_aggregated_attention_plots
 from utils.utils_loss import *
 from sklearn.metrics import confusion_matrix
 from scipy.signal import hilbert
@@ -217,7 +217,7 @@ def train_valid(model, optimizer, Loss, epochs, train_loader, valid_loader, writ
                     print(f"EarlyStopping: New best {args.early_stopping_monitor}: {best_val_metric:.4f}")
                     torch.save(model.state_dict(), os.path.join(args.save_dir, f'model_fold_{kwargs["fold"]}.pth'))
                     if args.multi_head_attention:
-                        save_attention_heatmaps(val_attentions, epoch, kwargs['fold'])
+                        save_aggregated_attention_plots(val_attentions, all_labels_tensor.cpu().numpy(), epoch, kwargs['fold'])
                 else:
                     epochs_no_improve += 1
                     print(f"EarlyStopping: No improvement in {args.early_stopping_monitor} for {epochs_no_improve} epoch(s). Best: {best_val_metric:.4f}, Current: {current_val_metric_for_early_stopping:.4f}")

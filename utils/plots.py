@@ -3,38 +3,65 @@ import numpy as np
 import seaborn as sns
 import matplotlib.pyplot as plt
 
-def save_attention_heatmaps(attention_arrays, epoch, fold, base_dir='attention_heatmaps'):
+def save_aggregated_attention_plots(attention_arrays, labels, epoch, fold, base_dir='aggregated_attention_plots'):
     """
-    Saves heatmaps of attention arrays for a given epoch and fold.
+    Aggregates attention scores for each class and saves plots for a given epoch and fold.
 
     Args:
         attention_arrays (list): A list of numpy arrays, where each array is a batch of attention weights.
                                  The shape of each array is (batch_size, num_classes, num_bands).
+        labels (np.ndarray): A numpy array of true labels for all samples.
         epoch (int): The current epoch number.
         fold (int): The current fold number.
-        base_dir (str): The base directory to save the heatmaps in.
+        base_dir (str): The base directory to save the plots in.
     """
     # Create the directory for the fold and epoch
     save_dir = os.path.join(base_dir, f'fold_{fold}', f'epoch_{epoch}')
     os.makedirs(save_dir, exist_ok=True)
 
-    # Iterate through each batch of attention arrays
-    batch_item_count = 0
-    for batch_idx, batch_attention in enumerate(attention_arrays):
-        # Iterate through each attention map in the batch
-        for item_idx in range(batch_attention.shape[0]):
-            attention_map = batch_attention[item_idx]  # Shape: (num_classes, num_bands)
+    # Concatenate all attention batches into a single array
+    if not attention_arrays:
+        print("No attention arrays to process.")
+        return
 
-            plt.figure(figsize=(10, 8))
-            sns.heatmap(attention_map, cmap='viridis')
-            plt.title(f'Attention Heatmap - Fold {fold}, Epoch {epoch}, Batch {batch_idx}, Item {item_idx}')
-            plt.xlabel('Bands')
-            plt.ylabel('Classes')
+    all_attentions = np.concatenate(attention_arrays, axis=0)
+
+    num_samples, num_classes, num_bands = all_attentions.shape
+
+    # Ensure labels match the number of samples
+    if len(labels) != num_samples:
+        print(f"Warning: Number of labels ({len(labels)}) does not match number of samples ({num_samples}). Skipping plotting.")
+        return
+
+    # Aggregate attention vectors for each class
+    aggregated_attentions = [[] for _ in range(num_classes)]
+    for i in range(num_samples):
+        true_label = labels[i]
+        # Get the attention scores from the prototype corresponding to the true label
+        attention_vector = all_attentions[i, true_label, :]
+        aggregated_attentions[true_label].append(attention_vector)
+
+    # Plot and save the aggregated attention for each class
+    for c in range(num_classes):
+        if aggregated_attentions[c]:
+            # Calculate the average attention vector for the class
+            mean_attention = np.mean(aggregated_attentions[c], axis=0)
+
+            plt.figure(figsize=(12, 6))
+
+            # Create a bar chart
+            band_indices = np.arange(num_bands)
+            plt.bar(band_indices, mean_attention)
+
+            plt.title(f'Aggregated Attention for Class {c} - Fold {fold}, Epoch {epoch}')
+            plt.xlabel('Frequency Band')
+            plt.ylabel('Average Attention Score')
+            plt.xticks(band_indices)
+            plt.grid(axis='y', linestyle='--')
 
             # Save the figure
-            save_path = os.path.join(save_dir, f'batch_{batch_idx}_item_{item_idx}.png')
+            save_path = os.path.join(save_dir, f'aggregated_attention_class_{c}.png')
             plt.savefig(save_path)
             plt.close()
-            batch_item_count +=1
 
-    print(f"Saved {batch_item_count} attention heatmaps to {save_dir}")
+    print(f"Saved aggregated attention plots to {save_dir}")
