@@ -1,6 +1,8 @@
 import os
 import numpy as np
 import seaborn as sns
+import matplotlib
+matplotlib.use('Agg') # Use non-interactive backend
 import matplotlib.pyplot as plt
 
 def save_aggregated_attention_plots(attention_arrays, labels, epoch, fold, base_dir='aggregated_attention_plots'):
@@ -41,6 +43,9 @@ def save_aggregated_attention_plots(attention_arrays, labels, epoch, fold, base_
         attention_vector = all_attentions[i, true_label, :]
         aggregated_attentions[true_label].append(attention_vector)
 
+    # Define the brain frequency band names based on the user's provided mapping
+    band_names = ['alpha', 'beta', 'delta', 'gamma', 'theta']
+
     # Plot and save the aggregated attention for each class
     for c in range(num_classes):
         if aggregated_attentions[c]:
@@ -56,7 +61,13 @@ def save_aggregated_attention_plots(attention_arrays, labels, epoch, fold, base_
             plt.title(f'Aggregated Attention for Class {c} - Fold {fold}, Epoch {epoch}')
             plt.xlabel('Frequency Band')
             plt.ylabel('Average Attention Score')
-            plt.xticks(band_indices)
+
+            # Use band names for x-axis labels if possible
+            if num_bands == len(band_names):
+                plt.xticks(band_indices, band_names, rotation=45)
+            else:
+                plt.xticks(band_indices)
+
             plt.grid(axis='y', linestyle='--')
 
             # Save the figure
